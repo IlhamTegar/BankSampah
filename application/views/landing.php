@@ -8,38 +8,55 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
 </head>
 <body class="bg-gray-100">
 
-  <!-- Hero Section -->
-  <section class="relative bg-gray-900 text-white" style="
-    background: url('assets/images/background.jpg') no-repeat center center;
-    background-size: cover;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  ">
-    <div class="absolute inset-0">
-      <img src="https://images.unsplash.com/photo-1501594907352-04cda38ebc29"
-           alt="city background"
-           class="w-full h-full object-cover opacity-70">
-    </div>
-    <div class="relative z-10 text-center py-24">
-      <h1 class="text-4xl md:text-5xl font-bold mb-4">Garbage Bank</h1>
-      <p class="mb-6">Transform your waste into value. Join our community of collectors and agents working together for a cleaner city.</p>
-      <div class="flex justify-center gap-4">
-        <button onclick="openModal('userRegisterModal')" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg">Register as User</button>
-        <button onclick="openModal('agentRegisterModal')" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg">Register as Agent</button>
+  <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+
+  <div x-data="{ loginModal: false, registerModal: false, registerRole: '' }">
+
+    <section class="relative bg-gray-900 text-white" style="
+      background: url('https://images.unsplash.com/photo-1501594907352-04cda38ebc29') no-repeat center center;
+      background-size: cover;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    ">
+      <div class="absolute inset-0 bg-black opacity-50"></div>
+      <div class="relative z-10 text-center py-24 px-4">
+
+        <?php if($this->session->flashdata('success')): ?>
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative max-w-md mx-auto mb-4" role="alert">
+            <span class="block sm:inline"><?= $this->session->flashdata('success'); ?></span>
+        </div>
+        <?php endif; ?>
+        
+        <?php if($this->session->flashdata('error')): ?>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-md mx-auto mb-4">
+            <?= $this->session->flashdata('error'); ?>
+        </div>
+        <?php endif; ?>
+
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Garbage Bank</h1>
+        <p class="mb-6 max-w-2xl mx-auto">Transform your waste into value. Join our community of collectors and agents working together for a cleaner city.</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+          <button @click="registerModal = true; registerRole = 'user'" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold">Register as User</button>
+          <button @click="registerModal = true; registerRole = 'agent'" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold">Register as Agent</button>
+        </div>
+        <p class="mt-4">
+          Already have an account?
+          <button @click="loginModal = true" class="underline font-semibold hover:text-green-300">Login</button>
+        </p>
+        <p class="mt-2">
+          <a href="#impact" class="underline hover:text-green-300">View Statistics</a>
+        </p>
       </div>
-      <p class="mt-4">Already have an account? 
-        <button onclick="openModal('loginModal')" class="underline">Login</button>
-      </p>
-      <p class="mt-2">
-        <a href="#impact" class="underline">View Statistics</a>
-      </p>
-    </div>
-  </section>
+    </section>
+    
+    <?php $this->load->view('partials/modal_auth'); ?>
+  </div>
 
   <!-- Impact Section -->
   <section id="impact" class="py-16 text-center">

@@ -83,4 +83,26 @@ class Home_model extends CI_Model {
 
         return $agents;
     }
+
+    // ===============================
+    // === 4️⃣ REGISTRASI USER & AGEN ===
+    // ===============================
+    
+    public function insert_user($data)
+    {
+        $this->db->insert('users', $data);
+        return $this->db->insert_id(); // Mengembalikan ID dari user yang baru dibuat
+    }
+
+    public function insert_agent($data)
+    {
+        return $this->db->insert('agent', $data);
+    }
+
+    public function get_agent_status($user_id)
+    {
+        $this->db->select('status');
+        $this->db->where('id_user', $user_id);
+        return $this->db->get('agent')->row_array();
+    }
 }
