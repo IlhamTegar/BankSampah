@@ -46,31 +46,20 @@
     </div>
 
     <!-- Navigation -->
-    <ul class="nav flex-column">
-      <li class="nav-item mb-2">
-        <a href="<?= site_url('agent/dashboard'); ?>" class="nav-link <?= ($page=='dashboard')?'active text-success':'text-dark'; ?>">
-          Dashboard
-        </a>
-      </li>
-      <li class="nav-item mb-2">
-        <a href="<?= site_url('agent/my_user'); ?>"  class="nav-link <?= ($page=='my_user')?'active text-success':'text-dark'; ?>">
-          My Users
-        </a>
-      </li>
-      <li class="nav-item mb-2">
-        <a href="<?= site_url('agent/transactions'); ?>" class="nav-link <?= ($page=='transactions')?'active text-success':'text-dark'; ?>">
-          Transactions
-        </a>
-      </li>
-      <li class="nav-item mb-2">
-        <a href="<?= site_url('agent/profile'); ?>" class="nav-link <?= ($page=='profile')?'active text-success':'text-dark'; ?>">
-          Profile
-        </a>
-      </li>
-      <li class="nav-item mt-4">
-        <a href="<?= site_url('logout'); ?>" class="nav-link text-danger">Logout</a>
-      </li>
-    </ul>
+    <nav class="mt-10">
+    <a href="<?= base_url('agent/dashboard') ?>" class="flex items-center mt-4 py-2 px-6 bg-gray-700 bg-opacity-25 text-gray-100">
+        <span class="mx-3">Dashboard</span>
+    </a>
+    <a href="<?= base_url('agent/my_user') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-500 hover:bg-gray-700 hover:bg-opacity-25 hover:text-gray-100">
+        <span class="mx-3">Nasabah</span>
+    </a>
+    <a href="<?= base_url('agent/transactions') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-500 hover:bg-gray-700 hover:bg-opacity-25 hover:text-gray-100">
+        <span class="mx-3">Transaksi</span>
+    </a>
+    <a href="<?= base_url('agent/profile') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-500 hover:bg-gray-700 hover:bg-opacity-25 hover:text-gray-100">
+        <span class="mx-3">Profil</span>
+    </a>
+    </nav>
   </div>
 
   <!-- Content -->
