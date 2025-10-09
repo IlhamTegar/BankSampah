@@ -27,4 +27,26 @@ class User_model extends CI_Model {
                           ->get();
         return $query->result_array();
     }
+    
+	 public function register($data_user, $data_agent = null)
+    {
+        // Insert user first
+        $this->db->insert('users', $data_user);
+        $user_id = $this->db->insert_id();
+
+        // If role is agent, insert into agent table
+        if ($data_user['role'] === 'agent' && $data_agent !== null) {
+            $data_agent['id_user'] = $user_id;
+            $this->db->insert('agent', $data_agent);
+        }
+
+        return $user_id;
+    }
+
+    public function check_email_exists($email)
+    {
+        return $this->db->where('email', $email)
+                        ->get('users')
+                        ->num_rows() > 0;
+    }
 }

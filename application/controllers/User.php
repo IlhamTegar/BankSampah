@@ -6,6 +6,9 @@ class User extends CI_Controller {
     public function __construct()
     {
         parent::__construct();
+		$this->load->model('User_model');
+        $this->load->helper(['url', 'form']);
+        $this->load->library('session');
     }
 
     public function dashboard()
@@ -97,5 +100,61 @@ class User extends CI_Controller {
         $this->load->view('user/layout', [
             'content' => $this->load->view('user/profile', $data, TRUE)
         ]);
+    }
+	public function register()
+    {
+        $role = $this->input->post('role', true);
+        $name = $this->input->post('name', true);
+        $email = $this->input->post('email', true);
+        $password = $this->input->post('password', true);
+        $phone = $this->input->post('phone', true);
+
+        // Check if email already exists
+        if ($this->User_model->check_email_exists($email)) {
+            $this->session->set_flashdata('error', 'Email sudah terdaftar.');
+            redirect(base_url());
+        }
+
+        // Base user data
+        $data_user = [
+            'nama' => $name,
+            'email' => $email,
+            'username' => explode('@', $email)[0],
+            'password' => password_hash($password, PASSWORD_BCRYPT),
+            'role' => $role,
+            'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($name),
+            'poin' => 0,
+            'saldo' => 0
+        ];
+
+        // If agent, prepare agent data
+        $data_agent = null;
+        if ($role === 'agent') {
+            $data_agent = [
+                'wilayah' => $this->input->post('wilayah', true),
+                'latitude' => $this->input->post('latitude', true),
+                'longitude' => $this->input->post('longitude', true),
+                'status' => 'aktif'
+            ];
+        }
+
+        // Save to DB
+        $user_id = $this->User_model->register($data_user, $data_agent);
+
+        // Set session
+        $this->session->set_userdata([
+            'id_user' => $user_id,
+            'nama' => $name,
+            'email' => $email,
+            'role' => $role,
+            'logged_in' => true
+        ]);
+
+        // Redirect by role
+        if ($role === 'agent') {
+            redirect('agent/dashboard');
+        } else {
+            redirect('user/dashboard');
+        }
     }
 }

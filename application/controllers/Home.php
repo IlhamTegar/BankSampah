@@ -82,8 +82,6 @@ class Home extends CI_Controller {
             $agentData = [
                 'id_user' => $userId,
                 'wilayah' => $this->input->post('wilayah'),
-                'latitude' => $this->input->post('latitude'),
-                'longitude' => $this->input->post('longitude'),
                 // Status akan otomatis 'pending' karena default di database
             ];
             $this->Home_model->insert_agent($agentData);
