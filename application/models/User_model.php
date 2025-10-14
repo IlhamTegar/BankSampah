@@ -32,7 +32,8 @@ class User_model extends CI_Model {
 
     public function get_user_transactions($user_id, $limit = null)
     {
-        $this->db->select('ts.*, a.wilayah as agent_area, u_agent.nama as agent_name');
+        // PERBAIKAN FINAL: Menggunakan 'subtotal_poin' di sub-query
+        $this->db->select('ts.*, a.wilayah as agent_area, u_agent.nama as agent_name, (SELECT SUM(ds.subtotal_poin) FROM detail_setoran ds WHERE ds.id_setoran = ts.id_setoran) as transaction_value');
         $this->db->from('transaksi_setoran ts');
         $this->db->join('agent a', 'a.id_agent = ts.id_agent', 'left');
         $this->db->join('users u_agent', 'u_agent.id_user = a.id_user', 'left');
@@ -53,15 +54,74 @@ class User_model extends CI_Model {
         return $row->total_berat ?? 0;
     }
 
+    // --- FUNGSI BARU UNTUK DASHBOARD ---
+
+    public function get_waste_summary_by_user($user_id)
+    {
+        $this->db->select('js.nama_jenis as waste_type, SUM(ds.berat) as total_weight');
+        $this->db->from('transaksi_setoran ts');
+        $this->db->join('detail_setoran ds', 'ts.id_setoran = ds.id_setoran');
+        $this->db->join('jenis_sampah js', 'ds.id_jenis = js.id_jenis');
+        $this->db->where('ts.id_user', $user_id);
+        $this->db->group_by('js.nama_jenis');
+        $this->db->order_by('total_weight', 'DESC');
+        $query = $this->db->get();
+        return $query->result_array();
+    }
+
     // --- FUNGSI UNTUK HALAMAN BANK SAMPAH ---
+
+    public function get_nearest_agents($latitude, $longitude, $radius = 10, $limit = 5)
+    {
+        // Rumus Haversine untuk menghitung jarak berdasarkan koordinat
+        $this->db->select("
+            u.nama as name, 
+            u.phone,
+            u.address,
+            a.wilayah, 
+            u.latitude, 
+            u.longitude, 
+            (
+                6371 * acos(
+                    cos(radians(" . $latitude . ")) 
+                    * cos(radians(u.latitude)) 
+                    * cos(radians(u.longitude) - radians(" . $longitude . ")) 
+                    + sin(radians(" . $latitude . ")) 
+                    * sin(radians(u.latitude))
+                )
+            ) AS distance
+        ");
+        $this->db->from('agent a');
+        $this->db->join('users u', 'u.id_user = a.id_user');
+        $this->db->where('a.status', 'aktif');
+        $this->db->having('distance <=', $radius);
+        $this->db->order_by('distance', 'ASC');
+        $this->db->limit($limit);
+
+        return $this->db->get()->result_array();
+    }
 
     public function get_all_active_agents()
     {
-        $this->db->select('users.nama as name, agent.wilayah, agent.latitude, agent.longitude');
+        $this->db->select('users.nama as name, users.phone, users.address, agent.wilayah, users.latitude, users.longitude');
         $this->db->from('agent');
         $this->db->join('users', 'users.id_user = agent.id_user');
         $this->db->where('agent.status', 'aktif');
         return $this->db->get()->result_array();
+    }
+
+    // --- FUNGSI BARU UNTUK HALAMAN TRANSAKSI (DIPERBAIKI) ---
+
+    public function get_total_income_by_user($user_id)
+    {
+        // PERBAIKAN FINAL: Menggunakan nama kolom yang 100% benar 'subtotal_poin'
+        $this->db->select('SUM(ds.subtotal_poin) as total_income');
+        $this->db->from('transaksi_setoran ts');
+        $this->db->join('detail_setoran ds', 'ts.id_setoran = ds.id_setoran');
+        $this->db->where('ts.id_user', $user_id);
+        $query = $this->db->get();
+        $row = $query->row();
+        return $row->total_income ?? 0;
     }
 
     // --- FUNGSI UNTUK HALAMAN PROFIL ---

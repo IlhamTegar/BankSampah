@@ -1,67 +1,95 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-100">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            background-color: #ffffff;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            padding-top: 20px;
+            border-right: 1px solid #dee2e6;
+        }
+        .sidebar .nav-link {
+            color: #495057;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border-radius: 0.25rem;
+        }
+        .sidebar .nav-link.active,
+        .sidebar .nav-link:hover {
+            background-color: #0d6efd;
+            color: #ffffff;
+        }
+        .sidebar .nav-link .bi {
+            margin-right: 10px;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #343a40;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .logout-link {
+            position: absolute;
+            bottom: 20px;
+            width: calc(100% - 40px);
+            margin: 0 20px;
+        }
+    </style>
 </head>
-<body class="h-full">
-    <div x-data="{ sidebarOpen: false }">
-        <div x-show="sidebarOpen" class="fixed inset-0 flex z-40 md:hidden" @click="sidebarOpen = false">
-            <div class="fixed inset-0 bg-black opacity-50"></div>
-            <div @click.stop class="relative flex-1 flex flex-col max-w-xs w-full bg-gray-800">
-                <div class="flex items-center justify-center h-16 bg-gray-900">
-                    <span class="text-white font-bold uppercase">User Panel</span>
-                </div>
-                <nav class="mt-5 flex-1 px-2 space-y-1">
-                    <a href="<?= base_url('index.php/user/dashboard') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
-                    <a href="<?= base_url('index.php/user/waste_banks') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Bank Sampah</a>
-                    <a href="<?= base_url('index.php/user/transactions') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Transaksi</a>
-                    <a href="<?= base_url('index.php/user/profile') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Profil</a>
-                    <a href="<?= base_url('index.php/home/logout') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Logout</a>
-                </nav>
-            </div>
-        </div>
+<body>
 
-        <div class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-            <div class="flex flex-col flex-grow bg-gray-800 pt-5 overflow-y-auto">
-                <div class="flex items-center flex-shrink-0 px-4">
-                    <span class="text-white text-xl font-bold">User Panel</span>
-                </div>
-                <div class="mt-5 flex-1 flex flex-col">
-                    <nav class="flex-1 px-2 pb-4 space-y-1">
-                        <a href="<?= base_url('user/dashboard') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Dashboard</a>
-                        <a href="<?= base_url('user/waste_banks') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Bank Sampah</a>
-                        <a href="<?= base_url('user/transactions') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Transaksi</a>
-                        <a href="<?= base_url('user/profile') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Profil</a>
-                        <a href="<?= base_url('home/logout') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Logout</a>
-                    </nav>
-                </div>
-            </div>
-        </div>
+<div class="sidebar">
+    <h3 class="sidebar-header">Nasabah Sampah</h3>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link <?= uri_string() == 'user/dashboard' ? 'active' : '' ?>" href="<?= base_url('user/dashboard') ?>">
+                <i class="bi bi-grid-1x2-fill"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?= uri_string() == 'user/waste_banks' ? 'active' : '' ?>" href="<?= base_url('user/waste_banks') ?>">
+                <i class="bi bi-shop"></i> Bank Sampah
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?= uri_string() == 'user/transactions' ? 'active' : '' ?>" href="<?= base_url('user/transactions') ?>">
+                <i class="bi bi-receipt"></i> Transaksi
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?= uri_string() == 'user/profile' ? 'active' : '' ?>" href="<?= base_url('user/profile') ?>">
+                <i class="bi bi-person-circle"></i> Profil
+            </a>
+        </li>
+    </ul>
+    <a href="<?= base_url('auth/logout') ?>" class="btn btn-outline-danger logout-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
+</div>
 
-        <div class="md:pl-64 flex flex-col flex-1">
-            <div class="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow">
-                <button @click="sidebarOpen = true" type="button" class="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
-                    </svg>
-                </button>
-                <div class="flex-1 px-4 flex justify-between items-center">
-                    <h1 class="text-xl font-bold">Selamat Datang, <?= $this->session->userdata('name'); ?>!</h1>
-                </div>
-            </div>
+<div class="main-content">
+    <?php
+    // Memuat view konten dinamis yang dikirim dari controller
+    if (isset($view_name)) {
+        $this->load->view($view_name);
+    }
+    ?>
+</div>
 
-            <main class="flex-1">
-                <div class="py-6">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-                        <?php $this->load->view($view_name); ?>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
