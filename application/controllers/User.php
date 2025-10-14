@@ -6,155 +6,97 @@ class User extends CI_Controller {
     public function __construct()
     {
         parent::__construct();
-		$this->load->model('User_model');
-        $this->load->helper(['url', 'form']);
-        $this->load->library('session');
+        $this->load->model('User_model');
+
+        // Pengecekan sesi: pastikan pengguna sudah login dan rolenya adalah 'user'
+        if (!$this->session->userdata('logged_in') || $this->session->userdata('role') !== 'user') {
+            $this->session->set_flashdata('error', 'Anda harus login sebagai User untuk mengakses halaman ini.');
+            redirect(base_url());
+        }
+    }
+
+    public function index()
+    {
+        redirect('user/dashboard');
     }
 
     public function dashboard()
     {
-        $data['page'] = 'dashboard'; // biar dipanggil via layout
-        $data['user'] = [
-            'name' => 'John Doe',
-            'role' => 'Regular User',
-            'avatar' => 'https://via.placeholder.com/40'
-        ];
+        $user_id = $this->session->userdata('user_id');
+        
+        $data['balance'] = $this->User_model->get_user_balance($user_id);
+        $data['transactions'] = $this->User_model->get_user_transactions($user_id, 5);
+        $data['total_transactions'] = $this->User_model->count_user_transactions($user_id);
 
-        $data['stats'] = [
-            'total_collections' => 23,
-            'points' => 1240,
-            'active_requests' => 2,
-            'monthly_goal' => 78
-        ];
-
-        $data['recent_activity'] = [
-            ['date' => '2024-01-15', 'amount' => '5.2 kg', 'by' => 'Maria Garcia'],
-            ['date' => '2024-01-12', 'amount' => '3.8 kg', 'by' => 'John Smith'],
-            ['date' => '2024-01-10', 'amount' => '7.1 kg', 'by' => 'David Chen'],
-        ];
-
-        $this->load->view('user/layout', $data);
-    }
-    
-    public function waste_banks() {
-        $data['page'] = 'waste_banks';
-
-        // Dummy data user (sementara, nanti bisa ambil dari session)
-        $data['user'] = [
-            'name' => 'John Doe',
-            'role' => 'Regular User'
-        ];
-
-        // Dummy data centers
-        $data['centers'] = [
-            ['id'=>1, 'name'=>'Center A', 'distance'=>'1.2 km', 'type'=>'Plastic', 'favorite'=>true],
-            ['id'=>2, 'name'=>'Center B', 'distance'=>'2.5 km', 'type'=>'Paper', 'favorite'=>false],
-            ['id'=>3, 'name'=>'Center C', 'distance'=>'3.1 km', 'type'=>'Metal', 'favorite'=>true],
-        ];
-
+        $data['view_name'] = 'user/dashboard'; 
         $this->load->view('user/layout', $data);
     }
 
-    public function transactions() {
-        $data['page'] = 'transactions';
-
-        // Dummy data user
-        $data['user'] = [
-            'name' => 'John Doe',
-            'role' => 'Regular User'
-        ];
-
-        // Dummy data transaksi
-        $data['transactions'] = [
-            ['id'=>'TX001', 'date'=>'2025-09-30', 'waste_type'=>'Plastic', 'agent'=>'Agent A', 'weight'=>'2.5kg', 'location'=>'Center A', 'points'=>20, 'earnings'=>5.5, 'status'=>'Completed'],
-            ['id'=>'TX002', 'date'=>'2025-09-29', 'waste_type'=>'Paper', 'agent'=>'Agent B', 'weight'=>'1.2kg', 'location'=>'Center B', 'points'=>10, 'earnings'=>2.3, 'status'=>'Pending'],
-        ];
-
-        $this->load->view('user/layout', $data);
-    }
-
-
-    public function profile() {
-        $data['page']  = "profile"; 
-
-        // Dummy user data
-        $data['user'] = [
-            'name'    => 'John Doe',
-            'role'    => 'Community Member',
-            'email'   => 'john.doe@example.com',
-            'phone'   => '+1-555-0123',
-            'address' => '123 Main Street, Downtown District',
-            'bio'     => 'Environmental enthusiast committed to sustainable waste management',
-            'member_since' => 'Jan 2024'
-        ];
-
-        // Dummy stats
-        $data['stats'] = [
-            'collections'     => 23,
-            'points'          => 1240,
-            'member_since'    => 'Jan 2024',
-            'waste_collected' => '156 '
-        ];
-
-        // Load profile view via layout
-        $this->load->view('user/layout', [
-            'content' => $this->load->view('user/profile', $data, TRUE)
-        ]);
-    }
-	public function register()
+    public function transactions()
     {
-        $role = $this->input->post('role', true);
-        $name = $this->input->post('name', true);
-        $email = $this->input->post('email', true);
-        $password = $this->input->post('password', true);
-        $phone = $this->input->post('phone', true);
+        $user_id = $this->session->userdata('user_id');
+        $data['transactions'] = $this->User_model->get_user_transactions($user_id);
+        $data['view_name'] = 'user/transactions';
+        $this->load->view('user/layout', $data);
+    }
 
-        // Check if email already exists
-        if ($this->User_model->check_email_exists($email)) {
-            $this->session->set_flashdata('error', 'Email sudah terdaftar.');
-            redirect(base_url());
+    public function waste_banks()
+    {
+        $data['agents'] = $this->User_model->get_all_active_agents();
+        $data['view_name'] = 'user/waste_banks';
+        $this->load->view('user/layout', $data);
+    }
+
+    public function profile()
+    {
+        $user_id = $this->session->userdata('user_id');
+
+        // Proses update jika ada form POST
+        if ($this->input->post()) {
+            $update_data = [
+                'nama'    => $this->input->post('name'),
+                'email'   => $this->input->post('email'),
+                'phone'   => $this->input->post('phone'),
+                'address' => $this->input->post('address'),
+                'bio'     => $this->input->post('bio'),
+            ];
+
+            // Hanya update password jika diisi
+            if ($this->input->post('password')) {
+                $update_data['password'] = password_hash($this->input->post('password'), PASSWORD_BCRYPT);
+            }
+
+            if ($this->User_model->update_profile($user_id, $update_data)) {
+                // Update session juga agar nama di header berubah
+                $this->session->set_userdata('name', $update_data['nama']);
+                $this->session->set_flashdata('success', 'Profil berhasil diperbarui.');
+            } else {
+                $this->session->set_flashdata('error', 'Gagal memperbarui profil.');
+            }
+            redirect('user/profile');
         }
 
-        // Base user data
-        $data_user = [
-            'nama' => $name,
-            'email' => $email,
-            'username' => explode('@', $email)[0],
-            'password' => password_hash($password, PASSWORD_BCRYPT),
-            'role' => $role,
-            'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($name),
-            'poin' => 0,
-            'saldo' => 0
+        // Menyiapkan data untuk ditampilkan di view
+        $user_profile = $this->User_model->get_user_profile($user_id);
+
+        $data['user'] = [
+            'name'         => $user_profile['nama'],
+            'role'         => ucfirst($user_profile['role']),
+            'email'        => $user_profile['email'],
+            'phone'        => $user_profile['phone'] ?? 'Belum diisi',
+            'address'      => $user_profile['address'] ?? 'Belum diisi',
+            'bio'          => $user_profile['bio'] ?? 'Ceritakan tentang diri Anda.',
+            'member_since' => date('M Y', strtotime($user_profile['created_at'])),
         ];
 
-        // If agent, prepare agent data
-        $data_agent = null;
-        if ($role === 'agent') {
-            $data_agent = [
-                'wilayah' => $this->input->post('wilayah', true),
-                'latitude' => $this->input->post('latitude', true),
-                'longitude' => $this->input->post('longitude', true),
-                'status' => 'aktif'
-            ];
-        }
+        $data['stats'] = [
+            'collections'     => $this->User_model->count_user_transactions($user_id),
+            'points'          => $this->User_model->get_user_points($user_id),
+            'waste_collected' => $this->User_model->get_total_waste_by_user($user_id),
+        ];
 
-        // Save to DB
-        $user_id = $this->User_model->register($data_user, $data_agent);
-
-        // Set session
-        $this->session->set_userdata([
-            'id_user' => $user_id,
-            'nama' => $name,
-            'email' => $email,
-            'role' => $role,
-            'logged_in' => true
-        ]);
-
-        // Redirect by role
-        if ($role === 'agent') {
-            redirect('agent/dashboard');
-        } else {
-            redirect('user/dashboard');
-        }
+        $data['view_name'] = 'user/profile';
+        $this->load->view('user/layout', $data);
     }
 }
+

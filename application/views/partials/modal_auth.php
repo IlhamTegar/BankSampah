@@ -15,7 +15,7 @@
         <div class="text-center">
             <h3 class="text-2xl font-bold text-gray-900">Login</h3>
             <div class="mt-4 px-7 py-3">
-                <form action="<?= base_url('home/login') ?>" method="POST">
+                <form action="<?= base_url('index.php/home/login') ?>" method="POST">
                     <input class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-green-600"
                         type="email" placeholder="Email" name="email" required>
                     <input class="w-full px-4 py-2 mt-4 border rounded-md focus:outline-none focus:ring-1 focus:ring-green-600"
@@ -46,7 +46,7 @@
         <div class="text-center">
             <h3 class="text-2xl font-bold text-gray-900">Register as <span x-text="registerRole === 'user' ? 'User' : 'Agent'"></span></h3>
             <div class="mt-4 px-7 py-3">
-                <form action="<?= site_url('user/register') ?>" method="POST">
+                <form action="<?= site_url('home/register') ?>" method="POST">
                     <input type="hidden" name="role" x-model="registerRole">
                     
                     <input class="w-full px-4 py-2 mt-2 border rounded-md" type="text" placeholder="Full Name" name="name" required>

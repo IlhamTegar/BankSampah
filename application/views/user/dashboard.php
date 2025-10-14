@@ -1,65 +1,65 @@
-<h3 class="fw-bold">Welcome back, <?= $user['name']; ?>!</h3>
-<p class="text-muted">Here's your waste collection summary and recent activity.</p>
+<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 
-<!-- Stats -->
-<div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="card p-3 shadow-sm">
-      <h6>Total Collections</h6>
-      <h4 class="fw-bold"><?= $stats['total_collections']; ?></h4>
-      <small class="text-success">+3 this month</small>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card p-3 shadow-sm">
-      <h6>Points Earned</h6>
-      <h4 class="fw-bold"><?= $stats['points']; ?></h4>
-      <small class="text-success">+180 this week</small>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card p-3 shadow-sm">
-      <h6>Active Requests</h6>
-      <h4 class="fw-bold"><?= $stats['active_requests']; ?></h4>
-      <small class="text-muted">Pending pickup</small>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card p-3 shadow-sm">
-      <h6>Monthly Goal</h6>
-      <h4 class="fw-bold"><?= $stats['monthly_goal']; ?>%</h4>
-      <small class="text-muted"><?= 100 - $stats['monthly_goal']; ?>% remaining</small>
-    </div>
-  </div>
-</div>
+<div>
+    <!-- Header Sambutan -->
+    <h2 class="text-2xl font-bold text-gray-800">Welcome back, <?= htmlspecialchars($this->session->userdata('name')); ?>!</h2>
+    <p class="text-gray-600 mb-6">Here's your waste collection summary and recent activity.</p>
 
-<!-- Recent Activity -->
-<div class="card shadow-sm mb-4">
-  <div class="card-body">
-    <h5 class="fw-bold">Recent Activity</h5>
-    <p class="text-muted mb-3">Your latest waste collections</p>
-    <div class="list-group">
-      <?php foreach($recent_activity as $act): ?>
-        <div class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <strong>Collection</strong> - <?= $act['date']; ?>
-          </div>
-          <span><?= $act['amount']; ?> <small class="text-muted">by <?= $act['by']; ?></small></span>
+    <!-- Kartu Statistik -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h6 class="text-gray-500 font-medium">Total Saldo</h6>
+            <h4 class="text-3xl font-bold mt-1">Rp <?= isset($balance) ? number_format($balance, 0, ',', '.') : '0'; ?></h4>
         </div>
-      <?php endforeach; ?>
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h6 class="text-gray-500 font-medium">Total Setoran</h6>
+            <h4 class="text-3xl font-bold mt-1"><?= isset($total_transactions) ? $total_transactions : '0'; ?></h4>
+            <small class="text-green-500">+3 bulan ini</small> <!-- Contoh data statis -->
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h6 class="text-gray-500 font-medium">Poin Didapat</h6>
+            <h4 class="text-3xl font-bold mt-1">1,240</h4> <!-- Contoh data statis -->
+            <small class="text-green-500">+180 minggu ini</small> <!-- Contoh data statis -->
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h6 class="text-gray-500 font-medium">Target Bulanan</h6>
+            <h4 class="text-3xl font-bold mt-1">78%</h4> <!-- Contoh data statis -->
+            <small class="text-gray-500">22% tersisa</small> <!-- Contoh data statis -->
+        </div>
     </div>
-  </div>
+
+    <!-- Aktivitas Terbaru -->
+    <div class="bg-white p-6 rounded-xl shadow-sm mb-6">
+        <h5 class="text-xl font-bold">Aktivitas Terbaru</h5>
+        <p class="text-gray-500 mb-4">Setoran sampah terakhir Anda.</p>
+        <div class="space-y-3">
+            <?php if (empty($transactions)): ?>
+                <div class="text-center text-gray-500 py-4">Belum ada aktivitas.</div>
+            <?php else: ?>
+                <?php foreach($transactions as $trx): ?>
+                <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition">
+                    <div>
+                        <strong class="font-medium">Setoran</strong> - <span class="text-gray-600"><?= date('d M Y', strtotime($trx['tanggal_setor'])); ?></span>
+                    </div>
+                    <span>
+                        Rp <?= number_format($trx['total_setoran'], 0, ',', '.'); ?> 
+                        <small class="text-gray-500">ke <?= htmlspecialchars($trx['agent_name'] ?? 'N/A'); ?></small>
+                    </span>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Aksi Cepat -->
+    <div class="bg-white p-6 rounded-xl shadow-sm">
+        <h5 class="text-xl font-bold">Aksi Cepat</h5>
+        <p class="text-gray-500 mb-4">Kelola pengumpulan sampah Anda.</p>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <a href="#" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-center font-medium transition">Jadwalkan Penjemputan</a>
+            <a href="<?= base_url('user/waste_banks') ?>" class="bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200 text-center font-medium transition">Cari Bank Sampah</a>
+            <a href="#" class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg hover:bg-yellow-200 text-center font-medium transition">Tukar Poin</a>
+        </div>
+    </div>
 </div>
 
-<!-- Quick Actions -->
-<div class="card shadow-sm">
-  <div class="card-body">
-    <h5 class="fw-bold">Quick Actions</h5>
-    <p class="text-muted">Manage your waste collection</p>
-    <div class="d-flex gap-3">
-      <a href="#" class="btn btn-dark">Schedule Pickup</a>
-      <a href="#" class="btn btn-outline-success">Find Waste Bank</a>
-      <a href="#" class="btn btn-outline-warning">Redeem Points</a>
-    </div>
-  </div>
-</div>

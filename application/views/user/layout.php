@@ -1,84 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-100">
 <head>
-  <meta charset="UTF-8">
-  <title>User Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background: #f8f9fa;
-      margin: 0;
-      padding: 0;
-      overflow-x: hidden; /* cegah scroll horizontal */
-    }
-    .sidebar {
-      width: 260px;
-      min-height: 100vh;
-      background: #fff;
-      border-right: 1px solid #e5e7eb;
-      position: fixed;
-      left: 0;
-      top: 0;
-      padding: 20px;
-    }
-    .sidebar .nav-link {
-      color: #333;
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-    .sidebar .nav-link.active {
-      color: #198754;
-      font-weight: 600;
-    }
-    .content {
-      margin-left: 260px;
-      padding: 30px;
-      max-width: calc(100% - 260px); /* biar pas sesuai sisa layar */
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body>
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <h4 class="fw-bold mb-4">Garbage Bank</h4>
+<body class="h-full">
+    <div x-data="{ sidebarOpen: false }">
+        <div x-show="sidebarOpen" class="fixed inset-0 flex z-40 md:hidden" @click="sidebarOpen = false">
+            <div class="fixed inset-0 bg-black opacity-50"></div>
+            <div @click.stop class="relative flex-1 flex flex-col max-w-xs w-full bg-gray-800">
+                <div class="flex items-center justify-center h-16 bg-gray-900">
+                    <span class="text-white font-bold uppercase">User Panel</span>
+                </div>
+                <nav class="mt-5 flex-1 px-2 space-y-1">
+                    <a href="<?= base_url('index.php/user/dashboard') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
+                    <a href="<?= base_url('index.php/user/waste_banks') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Bank Sampah</a>
+                    <a href="<?= base_url('index.php/user/transactions') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Transaksi</a>
+                    <a href="<?= base_url('index.php/user/profile') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Profil</a>
+                    <a href="<?= base_url('index.php/home/logout') ?>" class="flex items-center py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-white">Logout</a>
+                </nav>
+            </div>
+        </div>
 
-    <!-- User Info -->
-    <div class="d-flex align-items-center mb-4">
-      <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
-           style="width:40px; height:40px;">
-        <?= isset($user['name']) ? substr($user['name'], 0, 1) : 'G' ?>
-      </div>
-      <div class="ms-2">
-        <p class="mb-0 fw-semibold"><?= isset($user['name']) ? $user['name'] : 'Guest' ?></p>
-        <small class="text-muted"><?= isset($user['role']) ? $user['role'] : '' ?></small>
-      </div>
+        <div class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
+            <div class="flex flex-col flex-grow bg-gray-800 pt-5 overflow-y-auto">
+                <div class="flex items-center flex-shrink-0 px-4">
+                    <span class="text-white text-xl font-bold">User Panel</span>
+                </div>
+                <div class="mt-5 flex-1 flex flex-col">
+                    <nav class="flex-1 px-2 pb-4 space-y-1">
+                        <a href="<?= base_url('user/dashboard') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Dashboard</a>
+                        <a href="<?= base_url('user/waste_banks') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Bank Sampah</a>
+                        <a href="<?= base_url('user/transactions') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Transaksi</a>
+                        <a href="<?= base_url('user/profile') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Profil</a>
+                        <a href="<?= base_url('home/logout') ?>" class="flex items-center mt-4 py-2 px-6 text-gray-300 hover:bg-gray-700 hover:text-gray-100">Logout</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="md:pl-64 flex flex-col flex-1">
+            <div class="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow">
+                <button @click="sidebarOpen = true" type="button" class="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden">
+                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                </button>
+                <div class="flex-1 px-4 flex justify-between items-center">
+                    <h1 class="text-xl font-bold">Selamat Datang, <?= $this->session->userdata('name'); ?>!</h1>
+                </div>
+            </div>
+
+            <main class="flex-1">
+                <div class="py-6">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+                        <?php $this->load->view($view_name); ?>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
-
-    <!-- Navigation -->
-    <ul class="nav flex-column">
-      <li class="nav-item mb-2">
-        <a class="nav-link <?=($page=='dashboard'?'active':'')?>" href="<?=site_url('dashboard')?>">Dashboard</a>
-      </li>
-      <li class="nav-item mb-2">
-        <a class="nav-link <?=($page=='waste_banks'?'active':'')?>" href="<?=site_url('waste_banks')?>">Waste Banks</a>
-      </li>
-      <li class="nav-item mb-2">
-        <a class="nav-link <?=($page=='transactions'?'active':'')?>" href="<?=site_url('transactions')?>">Transactions</a>
-      </li>
-      <li class="nav-item mb-2">
-        <a class="nav-link <?=($page=='profile'?'active':'')?>" href="<?=site_url('profile')?>">Profile</a>
-      </li>
-      <li class="nav-item mt-4">
-        <a class="nav-link text-danger" href="<?=site_url('logout')?>">Logout</a>
-      </li>
-    </ul>
-  </div>
-
-  <!-- Content -->
-  <div class="content">
-    <div class="container-fluid">
-      <?php $this->load->view('user/'.$page); ?>
-    </div>
-  </div>
 </body>
 </html>
