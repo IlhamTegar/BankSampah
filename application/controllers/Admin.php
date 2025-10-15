@@ -69,89 +69,61 @@ class Admin extends CI_Controller {
     
     // ... (Semua fungsi dashboard dan manajemen lainnya tetap sama) ...
     public function dashboard()
-	{
-		// Data untuk Summary Cards
-		$data['total_users'] = $this->Admin_model->get_total_users();
-		$data['total_agents'] = $this->Admin_model->get_total_agents();
-		$data['total_waste'] = $this->Admin_model->get_total_waste_collected();
+    {
+        $data['pending_agents'] = $this->Admin_model->get_pending_agents();
+        $data['unpaid_customers'] = $this->Admin_model->count_unpaid_customers();
+        
+        $data['view_name'] = 'admin/dashboard';
+        $this->load->view('admin/layout', $data);
+    }
 
-		// Data untuk tabel persetujuan
-		$data['pending_agents'] = $this->Admin_model->get_pending_agents();
-		
-		// Data untuk grafik
-		$monthly_data = $this->Admin_model->get_monthly_waste_trend();
-		$data['chart_labels'] = json_encode(array_column($monthly_data, 'month'));
-		$data['chart_data'] = json_encode(array_column($monthly_data, 'total'));
+    public function waste_prices()
+    {
+        if ($this->input->post('update_price')) {
+            $waste_id = $this->input->post('id_jenis');
+            $new_price = $this->input->post('harga');
+            $this->Admin_model->update_waste_price($waste_id, $new_price);
+            $this->session->set_flashdata('success', 'Harga sampah berhasil diperbarui.');
+            redirect('admin/waste_prices');
+        }
 
-		// Data untuk aktivitas terbaru
-		$data['recent_transactions'] = $this->Admin_model->get_recent_transactions();
-		
-		// Tampilkan view
-		$data['view_name'] = 'admin/dashboard_content';
-		$this->load->view('admin/layout', $data);
-	}
+        $data['waste_types'] = $this->Admin_model->get_all_waste_types();
+        $data['view_name'] = 'admin/waste_prices';
+        $this->load->view('admin/layout', $data);
+    }
 
-	public function approve_agent($id_agent)
-	{
-		$this->Admin_model->update_agent_status($id_agent, 'aktif');
-		$this->session->set_flashdata('success', 'Agen berhasil diaktifkan.');
-		redirect('admin/dashboard');
-	}
+    public function manage_agents()
+    {
+        $data['agents'] = $this->Admin_model->get_all_agents();
+        $data['view_name'] = 'admin/manage_agents';
+        $this->load->view('admin/layout', $data);
+    }
 
-	public function reject_agent($id_agent)
-	{
-		$this->Admin_model->update_agent_status($id_agent, 'nonaktif');
-		$this->session->set_flashdata('success', 'Agen telah dinonaktifkan.');
-		redirect('admin/dashboard');
-	}
+    public function manage_users()
+    {
+        $data['users'] = $this->Admin_model->get_all_customers();
+        $data['view_name'] = 'admin/manage_users';
+        $this->load->view('admin/layout', $data);
+    }
 
-	public function manage_agents()
-	{
-		$data['agents'] = $this->Admin_model->get_all_agents();
-		$data['view_name'] = 'admin/manage_agents_content';
-		$this->load->view('admin/layout', $data);
-	}
+    // --- AKSI ---
+    public function approve_agent($agent_id)
+    {
+        if ($this->Admin_model->approve_agent($agent_id)) {
+            $this->session->set_flashdata('success', 'Agen berhasil diaktifkan.');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal mengaktifkan agen.');
+        }
+        redirect('admin/dashboard');
+    }
 
-	public function manage_users()
-	{
-		$data['users'] = $this->Admin_model->get_all_users();
-		$data['view_name'] = 'admin/manage_users_content';
-		$this->load->view('admin/layout', $data);
-	}
-
-	public function waste_types()
-	{
-		$data['waste_types'] = $this->Admin_model->get_all_waste_types();
-		$data['view_name'] = 'admin/waste_types_content';
-		$this->load->view('admin/layout', $data);
-	}
-
-	public function add_waste_type()
-	{
-		$data = [
-			'nama_jenis' => $this->input->post('nama_jenis'),
-			'id_kategori' => $this->input->post('id_kategori'),
-		];
-		$this->Admin_model->insert_waste_type($data);
-		$this->session->set_flashdata('success', 'Jenis sampah berhasil ditambahkan.');
-		redirect('admin/waste_types');
-	}
-
-	public function edit_waste_type($id)
-	{
-		$data = [
-			'nama_jenis' => $this->input->post('nama_jenis'),
-			'id_kategori' => $this->input->post('id_kategori'),
-		];
-		$this->Admin_model->update_waste_type($id, $data);
-		$this->session->set_flashdata('success', 'Jenis sampah berhasil diperbarui.');
-		redirect('admin/waste_types');
-	}
-
-	public function delete_waste_type($id)
-	{
-		$this->Admin_model->delete_waste_type($id);
-		$this->session->set_flashdata('success', 'Jenis sampah berhasil dihapus.');
-		redirect('admin/waste_types');
-	}
+    public function reject_agent($agent_id)
+    {
+        if ($this->Admin_model->reject_agent($agent_id)) {
+            $this->session->set_flashdata('success', 'Agen berhasil ditolak.');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal menolak agen.');
+        }
+        redirect('admin/dashboard');
+    }
 }

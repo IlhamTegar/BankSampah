@@ -1,130 +1,118 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class User extends CI_Controller {
+class Agent extends CI_Controller {
 
     public function __construct()
     {
         parent::__construct();
-        $this->load->helper(['url', 'form']);
-        $this->load->library('session');
-        $this->load->database();
-        $this->load->model('User_model');
+        $this->load->model('Agent_model');
+
+        if (!$this->session->userdata('logged_in') || $this->session->userdata('role') !== 'agent') {
+            $this->session->set_flashdata('error', 'Anda harus login sebagai Agen untuk mengakses halaman ini.');
+            redirect(base_url());
+        }
     }
 
-    // ================== DASHBOARD ==================
+    public function index()
+    {
+        redirect('agent/dashboard');
+    }
+
     public function dashboard()
     {
-        // 🔒 Require login as user
-        if (!$this->session->userdata('logged_in') || $this->session->userdata('role') !== 'user') {
-            redirect(base_url());
-        }
+        $agent_id = $this->session->userdata('agent_id'); // Pastikan Anda menyimpan agent_id di session saat login
+        
+        $data['total_customers'] = $this->Agent_model->count_agent_customers($agent_id);
+        $data['total_transactions'] = $this->Agent_model->count_agent_transactions($agent_id);
+        $data['total_waste'] = $this->Agent_model->get_total_waste_by_agent($agent_id);
+        $data['recent_transactions'] = $this->Agent_model->get_agent_transactions($agent_id, 5); // Limit 5
 
-        // 🧠 Get session user info
-        $user = [
-            'name'   => $this->session->userdata('nama'),
-            'role'   => 'Regular User',
-            'email'  => $this->session->userdata('email'),
-            'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($this->session->userdata('nama')) . '&background=random'
-        ];
-
-        // 📊 Dummy stats (you can replace with real model calls later)
-        $data['stats'] = [
-            'total_collections' => 23,
-            'points'            => 1240,
-            'active_requests'   => 2,
-            'monthly_goal'      => 78
-        ];
-
-        // 📅 Dummy activity log (you can pull from DB later)
-        $data['recent_activity'] = [
-            ['date' => '2025-10-01', 'amount' => '5.2 kg', 'by' => 'Maria Garcia'],
-            ['date' => '2025-09-27', 'amount' => '3.8 kg', 'by' => 'John Smith'],
-            ['date' => '2025-09-25', 'amount' => '7.1 kg', 'by' => 'David Chen'],
-        ];
-
-        // ✅ Keep your current dashboard front-end style
-        $data['page']  = 'dashboard';
-        $data['user']  = $user;
-        $data['content'] = 'user/dashboard';
-        $this->load->view('user/layout', $data);
+        $data['view_name'] = 'agent/dashboard'; 
+        $this->load->view('agent/layout', $data);
     }
 
-    // ================== WASTE BANKS ==================
-    public function waste_banks()
+    public function my_user()
     {
-        if (!$this->session->userdata('logged_in') || $this->session->userdata('role') !== 'user') {
-            redirect(base_url());
-        }
+        $agent_id = $this->session->userdata('agent_id');
+        $data['customers'] = $this->Agent_model->get_agent_customers_list($agent_id);
 
-        $data['page'] = 'waste_banks';
-        $data['user'] = [
-            'name'   => $this->session->userdata('nama'),
-            'role'   => 'Regular User',
-            'email'  => $this->session->userdata('email')
-        ];
-
-        // Dummy waste banks (you can later pull from DB)
-        $data['centers'] = [
-            ['id'=>1, 'name'=>'Center A', 'distance'=>'1.2 km', 'type'=>'Plastic', 'favorite'=>true],
-            ['id'=>2, 'name'=>'Center B', 'distance'=>'2.5 km', 'type'=>'Paper', 'favorite'=>false],
-            ['id'=>3, 'name'=>'Center C', 'distance'=>'3.1 km', 'type'=>'Metal', 'favorite'=>true],
-        ];
-
-        $data['content'] = 'user/waste_banks';
-        $this->load->view('user/layout', $data);
+        $data['view_name'] = 'agent/my_user';
+        $this->load->view('agent/layout', $data);
     }
 
-    // ================== TRANSACTIONS ==================
     public function transactions()
     {
-        if (!$this->session->userdata('logged_in') || $this->session->userdata('role') !== 'user') {
-            redirect(base_url());
-        }
+        $agent_id = $this->session->userdata('agent_id');
 
-        $data['page'] = 'transactions';
-        $data['user'] = [
-            'name'   => $this->session->userdata('nama'),
-            'role'   => 'Regular User',
-            'email'  => $this->session->userdata('email')
-        ];
+        $data['total_transactions'] = $this->Agent_model->count_agent_transactions($agent_id);
+        $data['total_income'] = $this->Agent_model->get_total_income_by_agent($agent_id);
+        $data['total_waste'] = $this->Agent_model->get_total_waste_by_agent($agent_id);
+        $data['transactions'] = $this->Agent_model->get_agent_transactions($agent_id);
 
-        // Dummy transactions
-        $data['transactions'] = [
-            ['id'=>'TX001', 'date'=>'2025-09-30', 'waste_type'=>'Plastic', 'agent'=>'Agent A', 'weight'=>'2.5kg', 'location'=>'Center A', 'points'=>20, 'earnings'=>5.5, 'status'=>'Completed'],
-            ['id'=>'TX002', 'date'=>'2025-09-29', 'waste_type'=>'Paper', 'agent'=>'Agent B', 'weight'=>'1.2kg', 'location'=>'Center B', 'points'=>10, 'earnings'=>2.3, 'status'=>'Pending'],
-        ];
-
-        $data['content'] = 'user/transactions';
-        $this->load->view('user/layout', $data);
+        $data['view_name'] = 'agent/transactions';
+        $this->load->view('agent/layout', $data);
     }
 
-    // ================== PROFILE ==================
     public function profile()
     {
-        if (!$this->session->userdata('logged_in') || $this->session->userdata('role') !== 'user') {
-            redirect(base_url());
+        $user_id = $this->session->userdata('user_id');
+        $agent_id = $this->session->userdata('agent_id');
+
+        // Proses update jika ada form POST
+        if ($this->input->post()) {
+            // Data untuk tabel 'users'
+            $data_user = [
+                'nama'      => $this->input->post('name'),
+                'phone'     => $this->input->post('phone'),
+                'address'   => $this->input->post('address'),
+                'bio'       => $this->input->post('bio'),
+            ];
+
+            // Data untuk tabel 'agent'
+            $data_agent = [
+                'wilayah' => $this->input->post('wilayah')
+            ];
+
+            // Hanya update password jika diisi
+            if ($this->input->post('password')) {
+                $data_user['password'] = password_hash($this->input->post('password'), PASSWORD_BCRYPT);
+            }
+
+            if ($this->Agent_model->update_profile($user_id, $agent_id, $data_user, $data_agent)) {
+                $this->session->set_userdata('name', $data_user['nama']);
+                $this->session->set_flashdata('success', 'Profil berhasil diperbarui.');
+            } else {
+                $this->session->set_flashdata('error', 'Gagal memperbarui profil.');
+            }
+            redirect('agent/profile');
         }
 
-        $data['page']  = "profile"; 
-        $data['user'] = [
-            'name'    => $this->session->userdata('nama'),
-            'role'    => 'Regular User',
-            'email'   => $this->session->userdata('email'),
-            'phone'   => '+62 812-3456-7890',
-            'address' => 'Jl. Kebersihan No. 45, Bandung',
-            'bio'     => 'Environmental enthusiast committed to sustainable waste management',
-            'member_since' => 'Jan 2024'
-        ];
+        // Menyiapkan data untuk ditampilkan di view
+        $agent_profile = $this->Agent_model->get_agent_profile($user_id);
 
+        $data['agent'] = [
+            'name'         => $agent_profile['nama'],
+            'role'         => ucfirst($agent_profile['role']),
+            'email'        => $agent_profile['email'],
+            'phone'        => $agent_profile['phone'] ?? 'Belum diisi',
+            'address'      => $agent_profile['address'] ?? 'Belum diisi',
+            'bio'          => $agent_profile['bio'] ?? 'Ceritakan tentang bank sampah Anda.',
+            'wilayah'      => $agent_profile['wilayah'],
+            'member_since' => date('M Y', strtotime($agent_profile['created_at'])),
+        ];
+        
+        // Data untuk kartu statistik
         $data['stats'] = [
-            'collections'     => 23,
-            'points'          => 1240,
-            'member_since'    => 'Jan 2024',
-            'waste_collected' => '156 kg'
+            'customers'     => $this->Agent_model->count_agent_customers($agent_id),
+            'transactions'  => $this->Agent_model->count_agent_transactions($agent_id),
+            'waste_collected' => $this->Agent_model->get_total_waste_by_agent($agent_id),
         ];
 
-        $data['content'] = 'user/profile';
-        $this->load->view('user/layout', $data);
+        // Opsi untuk dropdown wilayah
+        $data['wilayah_options'] = ['Dusun Selatan','Dusun Hilir','Dusun Utara','Gunung Bintang Awai','Jenamas','Karau Kuala'];
+
+        $data['view_name'] = 'agent/profile';
+        $this->load->view('agent/layout', $data);
     }
 }

@@ -85,11 +85,7 @@ $route['admin/users'] = 'admin/users';
 
 $route['admin/agents'] = 'admin/agents';
 
-$route['admin/waste'] = 'admin/waste';
-
-$route['admin/transactions'] = 'admin/transactions';
-
-$route['admin/profile'] = 'admin/profile';
+$route['admin/waste_prices'] = 'admin/waste_prices';
 
 $route['404_override'] = '';
 

@@ -1,27 +1,32 @@
-<div class="bg-white p-6 rounded-lg shadow-lg">
-    <h2 class="text-2xl font-bold mb-4">Manajemen Nasabah</h2>
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead>
-                <tr class="bg-gray-200 text-left">
-                    <th class="py-2 px-4">Nama</th>
-                    <th class="py-2 px-4">Email</th>
-                    <th class="py-2 px-4">Telepon</th>
-                    <th class="py-2 px-4">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach($users as $user): ?>
-                <tr class="border-b">
-                    <td class="py-2 px-4"><?= htmlspecialchars($user['name']); ?></td>
-                    <td class="py-2 px-4"><?= htmlspecialchars($user['email']); ?></td>
-                    <td class="py-2 px-4"><?= htmlspecialchars($user['phone']); ?></td>
-                    <td class="py-2 px-4">
-                        <a href="#" class="text-blue-500 hover:underline">Detail</a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <h5 class="card-title fw-bold mb-3">Manajemen Nasabah</h5>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nama Nasabah</th>
+                        <th>Telepon</th>
+                        <th>Saldo</th>
+                        <th>Poin</th>
+                        <th>Bergabung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($users as $user): ?>
+                    <tr>
+                        <td>
+                            <div><?= html_escape($user['nama']); ?></div>
+                            <small class="text-muted"><?= html_escape($user['email']); ?></small>
+                        </td>
+                        <td><?= html_escape($user['phone'] ?? '-'); ?></td>
+                        <td>Rp <?= number_format($user['saldo'], 0, ',', '.'); ?></td>
+                        <td><?= number_format($user['poin'], 0, ',', '.'); ?></td>
+                        <td><?= date('d M Y', strtotime($user['created_at'])); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>

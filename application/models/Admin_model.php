@@ -3,106 +3,69 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Admin_model extends CI_Model {
 
-    // --- FUNGSI UNTUK DASHBOARD ---
-
-    public function get_total_users()
-    {
-        return $this->db->where('role', 'user')->count_all_results('users');
-    }
-
-    public function get_total_agents()
-    {
-        return $this->db->count_all_results('agent');
-    }
-
-    public function get_total_waste_collected()
-    {
-        $this->db->select_sum('total_setoran', 'total');
-        $query = $this->db->get('transaksi_setoran');
-        return $query->row()->total ?: 0;
-    }
-    
-    public function get_monthly_waste_trend()
-    {
-        $this->db->select("DATE_FORMAT(tanggal_setor, '%Y-%m') as month, SUM(total_setoran) as total");
-        $this->db->from('transaksi_setoran');
-        $this->db->group_by("DATE_FORMAT(tanggal_setor, '%Y-%m')");
-        $this->db->order_by('month', 'ASC');
-        $this->db->limit(6);
-        return $this->db->get()->result_array();
-    }
-
-    public function get_recent_transactions()
-    {
-        $this->db->select('transaksi_setoran.*, users.nama as user_name, agent.wilayah');
-        $this->db->from('transaksi_setoran');
-        $this->db->join('users', 'users.id_user = transaksi_setoran.id_user');
-        $this->db->join('agent', 'agent.id_agent = transaksi_setoran.id_agent');
-        $this->db->order_by('tanggal_setor', 'DESC');
-        $this->db->limit(5);
-        return $this->db->get()->result_array();
-    }
-
-
-    // --- FUNGSI UNTUK MANAJEMEN AGEN ---
-
-    public function get_all_agents()
-    {
-        // PERBAIKAN DI SINI: 'users.name' diubah menjadi 'users.nama'
-        $this->db->select('users.nama as name, users.email, agent.*');
-        $this->db->from('agent');
-        $this->db->join('users', 'users.id_user = agent.id_user');
-        return $this->db->get()->result_array();
-    }
-    
+    // --- DASHBOARD ---
     public function get_pending_agents()
     {
-        // PERBAIKAN DI SINI: 'users.name' diubah menjadi 'users.nama'
-        $this->db->select('users.nama as name, users.email, agent.*');
-        $this->db->from('agent');
-        $this->db->join('users', 'users.id_user = agent.id_user');
-        $this->db->where('agent.status', 'pending');
+        $this->db->select('u.nama, u.email, a.id_agent');
+        $this->db->from('agent a');
+        $this->db->join('users u', 'a.id_user = u.id_user');
+        $this->db->where('a.status', 'pending');
         return $this->db->get()->result_array();
     }
 
-    public function update_agent_status($id_agent, $status)
+    public function count_unpaid_customers()
     {
-        $this->db->where('id_agent', $id_agent);
-        $this->db->update('agent', ['status' => $status]);
+        // Logika ini adalah contoh. Anda perlu tabel/kolom 'iuran_status' di tabel 'users'.
+        // Untuk saat ini, kita akan mengembalikan angka statis.
+        // $this->db->where('iuran_status', 'unpaid');
+        // return $this->db->count_all_results('users');
+        return 12; // Contoh
+    }
+    
+    // --- HARGA SAMPAH ---
+    public function get_all_waste_types()
+    {
+        $this->db->select('js.*, hh.harga, hh.tanggal_update');
+        $this->db->from('jenis_sampah js');
+        $this->db->join('(SELECT id_jenis, MAX(id_histori) as max_id FROM harga_histori GROUP BY id_jenis) h_max', 'js.id_jenis = h_max.id_jenis', 'left');
+        $this->db->join('harga_histori hh', 'h_max.max_id = hh.id_histori', 'left');
+        return $this->db->get()->result_array();
     }
 
-    // --- FUNGSI UNTUK MANAJEMEN NASABAH ---
-    public function get_all_users()
+    public function update_waste_price($waste_type_id, $new_price)
     {
+        return $this->db->insert('harga_histori', [
+            'id_jenis' => $waste_type_id,
+            'harga' => $new_price,
+            'tanggal_update' => date('Y-m-d')
+        ]);
+    }
+
+    // --- MANAJEMEN AGEN & NASABAH ---
+    public function get_all_agents()
+    {
+        $this->db->select('u.nama, u.email, u.phone, a.wilayah, a.status, a.id_agent');
+        $this->db->from('agent a');
+        $this->db->join('users u', 'a.id_user = u.id_user');
+        return $this->db->get()->result_array();
+    }
+    
+    public function get_all_customers()
+    {
+        $this->db->select('nama, email, phone, saldo, poin, created_at');
         $this->db->where('role', 'user');
         return $this->db->get('users')->result_array();
     }
-
-    // --- FUNGSI UNTUK DATA MASTER (JENIS SAMPAH) ---
-    public function get_all_waste_types()
+    
+    public function approve_agent($agent_id)
     {
-        return $this->db->get('jenis_sampah')->result_array();
+        $this->db->where('id_agent', $agent_id);
+        return $this->db->update('agent', ['status' => 'aktif']);
     }
 
-    public function insert_waste_type($data)
+    public function reject_agent($agent_id)
     {
-        return $this->db->insert('jenis_sampah', $data);
-    }
-
-    public function get_waste_type_by_id($id)
-    {
-        return $this->db->get_where('jenis_sampah', ['id_jenis' => $id])->row_array();
-    }
-
-    public function update_waste_type($id, $data)
-    {
-        $this->db->where('id_jenis', $id);
-        return $this->db->update('jenis_sampah', $data);
-    }
-
-    public function delete_waste_type($id)
-    {
-        $this->db->where('id_jenis', $id);
-        return $this->db->delete('jenis_sampah');
+        $this->db->where('id_agent', $agent_id);
+        return $this->db->update('agent', ['status' => 'nonaktif']);
     }
 }

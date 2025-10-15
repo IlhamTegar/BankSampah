@@ -71,8 +71,8 @@ class Home_model extends CI_Model {
             users.nama AS name,
             agent.wilayah AS area,
             agent.status,
-            agent.latitude,
-            agent.longitude
+            users.latitude,
+            users.longitude
         ');
         $this->db->from('agent');
         $this->db->join('users', 'users.id_user = agent.id_user', 'left');
