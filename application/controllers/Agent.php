@@ -115,4 +115,13 @@ class Agent extends CI_Controller {
         $data['view_name'] = 'agent/profile';
         $this->load->view('agent/layout', $data);
     }
+
+    public function logout()
+    {
+        // Hapus semua data session
+        $this->session->sess_destroy();
+
+        // Redirect ke halaman utama (landing page)
+        redirect(base_url());
+    }
 }

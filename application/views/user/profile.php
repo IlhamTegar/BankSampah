@@ -68,6 +68,40 @@
                     </ul>
                 </div>
             </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Informasi Nasabah</h6>
+                    
+                    <?php if ($nasabah): // Ganti $nasabah dengan variabel yang benar dari controller ?>
+                        <div class="alert alert-info mb-0"> <strong>Tipe Nasabah:</strong> <?= ucfirst($nasabah['tipe_nasabah']); ?><br>
+                            <?php if (isset($nasabah['jumlah_nasabah']) && $nasabah['jumlah_nasabah'] > 0): ?>
+                                <strong>Jumlah Anggota:</strong> <?= $nasabah['jumlah_nasabah']; ?>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted small">Anda belum terdaftar sebagai nasabah perorangan atau kelompok.</p>
+                        <form action="<?= base_url('user/profile') ?>" method="POST">
+                            <input type="hidden" name="add_nasabah" value="1">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="tipe_nasabah" class="form-label">Tipe Nasabah</label>
+                                    <select class="form-select" id="tipe_nasabah" name="tipe_nasabah" required>
+                                        <option value="">-- Pilih Tipe --</option>
+                                        <option value="Perorangan">Perorangan</option>
+                                        <option value="Kelompok">Kelompok</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3" id="jumlah_nasabah_group" style="display: none;">
+                                    <label for="jumlah_nasabah" class="form-label">Jumlah Anggota</label>
+                                    <input type="number" class="form-control" id="jumlah_nasabah" name="jumlah_nasabah" min="2" placeholder="Minimal 2">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success">Daftarkan Tipe</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
 
         <div class="col-lg-8">
@@ -134,33 +168,7 @@
             </div>
         </div>
     </div>
-	<hr class="my-4">
-<h6 class="fw-bold mb-3">Data Nasabah</h6>
-
 <?php if ($nasabah): ?>
-    <div class="alert alert-info">
-        <strong>Tipe Nasabah:</strong> <?= ucfirst($nasabah['tipe_nasabah']); ?><br>
-        <strong>Jumlah Nasabah:</strong> <?= $nasabah['jumlah_nasabah']; ?>
-    </div>
-<?php else: ?>
-    <form action="<?= base_url('user/profile') ?>" method="POST" class="mt-3">
-        <input type="hidden" name="add_nasabah" value="1">
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="tipe_nasabah" class="form-label">Tipe Nasabah</label>
-                <select class="form-select" id="tipe_nasabah" name="tipe_nasabah" required>
-                    <option value="">-- Pilih Tipe --</option>
-                    <option value="Perorangan">Perorangan</option>
-                    <option value="Kelompok">Kelompok</option>
-                </select>
-            </div>
-            <div class="col-md-6 mb-3" id="jumlah_nasabah_group" style="display: none;">
-                <label for="jumlah_nasabah" class="form-label">Jumlah Nasabah</label>
-                <input type="number" class="form-control" id="jumlah_nasabah" name="jumlah_nasabah" min="1">
-            </div>
-        </div>
-        <button type="submit" class="btn btn-success">Tambah Nasabah</button>
-    </form>
 
     <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -188,9 +196,6 @@
     </script>
 <?php endif; ?>
 
-
-</div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
      crossorigin=""></script>
@@ -201,10 +206,9 @@
     const lonInput = document.getElementById('longitude');
 
     // Tentukan koordinat awal
-    // Prioritas: data dari database. Jika kosong, gunakan titik tengah Indonesia.
-    const initialLat = latInput.value || -2.5489; 
-    const initialLon = lonInput.value || 118.0149;
-    const initialZoom = latInput.value ? 16 : 5; // Zoom lebih dekat jika sudah ada data
+    const initialLat = latInput.value || -1.86667; 
+    const initialLon = lonInput.value || 114.73333;
+    const initialZoom = latInput.value ? 32 : 10; // Zoom lebih dekat jika sudah ada data
 
     // Inisialisasi peta
     const map = L.map('map').setView([initialLat, initialLon], initialZoom);
