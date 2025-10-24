@@ -163,5 +163,36 @@ class User_model extends CI_Model {
 
         return ($this->db->trans_status() === FALSE) ? false : $user_id;
     }
+	// --- FUNGSI UNTUK NASABAH ---
+public function get_nasabah_by_user($user_id)
+{
+    $this->db->where('id_users', $user_id);
+    return $this->db->get('nasabah')->row_array();
+}
+
+public function add_nasabah($data)
+{
+    return $this->db->insert('nasabah', $data);
+}
+public function simpan()
+{
+    $tipe = $this->input->post('tipe_nasabah');
+    $jumlah = $this->input->post('jumlah_nasabah');
+
+    if ($tipe === 'perorangan') {
+        $jumlah = 1; // force 1 for perorangan
+    }
+
+    $data = [
+        'tipe_nasabah' => $tipe,
+        'jumlah_nasabah' => $jumlah,
+        // tambahkan kolom lain sesuai database kamu
+    ];
+
+    $this->db->insert('nasabah', $data);
+    redirect('nasabah');
+}
+
+
 }
 

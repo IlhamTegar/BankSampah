@@ -73,73 +73,105 @@ class User extends CI_Controller {
     }
 
     public function profile()
-    {
-        $user_id = $this->session->userdata('user_id');
+{
+    $user_id = $this->session->userdata('user_id');
+    $this->load->database();
 
-        // Proses update jika ada form POST
-        if ($this->input->post()) {
-            $update_data = [
-                'nama'      => $this->input->post('name'),
-                'phone'     => $this->input->post('phone'),
-                'address'   => $this->input->post('address'), // Tetap simpan alamat teks
-                'bio'       => $this->input->post('bio'),
-                // PERUBAHAN: Simpan latitude dan longitude
-                'latitude'  => $this->input->post('latitude') ?: NULL,
-                'longitude' => $this->input->post('longitude') ?: NULL,
+    // === 1️⃣ ADD NASABAH SECTION (handle first if form submitted) ===
+    if ($this->input->post('add_nasabah')) {
+        $nasabah = $this->User_model->get_nasabah_by_user($user_id);
+
+        if (!$nasabah) {
+            $tipe = $this->input->post('tipe_nasabah');
+            $jumlah = $this->input->post('jumlah_nasabah');
+
+            // 🧩 Make sure jumlah_nasabah = 1 if Perorangan
+            if ($tipe === 'Perorangan') {
+                $jumlah = 1;
+            }
+
+            $data_nasabah = [
+                'id_users'       => $user_id,
+                'tipe_nasabah'   => $tipe,
+                'jumlah_nasabah' => $jumlah
             ];
 
-            // Hanya update password jika diisi
-            if ($this->input->post('password')) {
-                $update_data['password'] = password_hash($this->input->post('password'), PASSWORD_BCRYPT);
-            }
-
-            if ($this->User_model->update_profile($user_id, $update_data)) {
-                // Update session juga agar nama di header berubah
-                $this->session->set_userdata('name', $update_data['nama']);
-                $this->session->set_flashdata('success', 'Profil berhasil diperbarui.');
+            if ($this->User_model->add_nasabah($data_nasabah)) {
+                $this->session->set_flashdata('success', 'Data nasabah berhasil ditambahkan.');
             } else {
-                $this->session->set_flashdata('error', 'Gagal memperbarui profil.');
+                $this->session->set_flashdata('error', 'Gagal menambahkan data nasabah.');
             }
-            redirect('user/profile');
+        } else {
+            $this->session->set_flashdata('error', 'Anda sudah memiliki data nasabah.');
         }
 
-        // Menyiapkan data untuk ditampilkan di view
-        $user_profile = $this->User_model->get_user_profile($user_id);
-
-        // PERUBAHAN: Logika untuk menampilkan alamat
-        $this->load->helper('location');
-        $address_display = 'Belum diisi';
-        if (!empty($user_profile['latitude']) && !empty($user_profile['longitude'])) {
-        // Prioritaskan konversi dari koordinat
-        $address_display = get_address_from_coords($user_profile['latitude'], $user_profile['longitude']);
-        } elseif (!empty($user_profile['address'])) {
-            // Jika koordinat tidak ada, pakai alamat teks
-            $address_display = $user_profile['address'];
-        }
-
-        $data['user'] = [
-            'name'         => $user_profile['nama'],
-            'role'         => ucfirst($user_profile['role']),
-            'email'        => $user_profile['email'],
-            'phone'        => !empty($user_profile['phone']) ? $user_profile['phone'] : 'Belum diisi',
-            // PERUBAHAN: Gunakan variabel yang sudah disiapkan
-            'address'      => $address_display,
-            // Tambahkan latitude dan longitude untuk diisi di form
-            'latitude'     => $user_profile['latitude'],
-            'longitude'    => $user_profile['longitude'],
-            'raw_address'  => $user_profile['address'], // Kirim alamat asli untuk form
-            'bio'          => !empty($user_profile['bio']) ? $user_profile['bio'] : 'Ceritakan tentang diri Anda.',
-            'member_since' => date('M Y', strtotime($user_profile['created_at'])),
-        ];
-
-        $data['stats'] = [
-            'collections'     => $this->User_model->count_user_transactions($user_id),
-            'points'          => $this->User_model->get_user_points($user_id),
-            'waste_collected' => $this->User_model->get_total_waste_by_user($user_id),
-        ];
-
-        $data['view_name'] = 'user/profile';
-        $this->load->view('user/layout', $data);
+        redirect('user/profile');
+        return;
     }
+
+    // === 2️⃣ UPDATE PROFILE SECTION ===
+    if ($this->input->post()) {
+        $update_data = [
+            'nama'      => $this->input->post('name'),
+            'phone'     => $this->input->post('phone'),
+            'address'   => $this->input->post('address'),
+            'bio'       => $this->input->post('bio'),
+            'latitude'  => $this->input->post('latitude') ?: NULL,
+            'longitude' => $this->input->post('longitude') ?: NULL,
+        ];
+
+        if ($this->input->post('password')) {
+            $update_data['password'] = password_hash($this->input->post('password'), PASSWORD_BCRYPT);
+        }
+
+        if ($this->User_model->update_profile($user_id, $update_data)) {
+            $this->session->set_userdata('name', $update_data['nama']);
+            $this->session->set_flashdata('success', 'Profil berhasil diperbarui.');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal memperbarui profil.');
+        }
+
+        redirect('user/profile');
+        return;
+    }
+
+    // === 3️⃣ DISPLAY SECTION ===
+    $user_profile = $this->User_model->get_user_profile($user_id);
+
+    // Handle address display
+    $this->load->helper('location');
+    $address_display = 'Belum diisi';
+    if (!empty($user_profile['latitude']) && !empty($user_profile['longitude'])) {
+        $address_display = get_address_from_coords($user_profile['latitude'], $user_profile['longitude']);
+    } elseif (!empty($user_profile['address'])) {
+        $address_display = $user_profile['address'];
+    }
+
+    $nasabah = $this->User_model->get_nasabah_by_user($user_id);
+    $data['nasabah'] = $nasabah;
+
+    $data['user'] = [
+        'name'         => $user_profile['nama'],
+        'role'         => ucfirst($user_profile['role']),
+        'email'        => $user_profile['email'],
+        'phone'        => !empty($user_profile['phone']) ? $user_profile['phone'] : 'Belum diisi',
+        'address'      => $address_display,
+        'latitude'     => $user_profile['latitude'],
+        'longitude'    => $user_profile['longitude'],
+        'raw_address'  => $user_profile['address'],
+        'bio'          => !empty($user_profile['bio']) ? $user_profile['bio'] : 'Ceritakan tentang diri Anda.',
+        'member_since' => date('M Y', strtotime($user_profile['created_at'])),
+    ];
+
+    $data['stats'] = [
+        'collections'     => $this->User_model->count_user_transactions($user_id),
+        'points'          => $this->User_model->get_user_points($user_id),
+        'waste_collected' => $this->User_model->get_total_waste_by_user($user_id),
+    ];
+
+    $data['view_name'] = 'user/profile';
+    $this->load->view('user/layout', $data);
+}
+
 }
 

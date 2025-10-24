@@ -73,6 +73,12 @@
                 <i class="bi bi-people-fill"></i> Manajemen Nasabah
             </a>
         </li>
+		<li class="nav-item">
+    <a class="nav-link <?= uri_string() == 'admin/manage_iuran' ? 'active' : '' ?>" href="<?= base_url('admin/manage_iuran') ?>">
+        <i class="bi bi-cash-stack"></i> Manajemen Iuran
+    </a>
+</li>
+
     </ul>
     <a href="<?= base_url('auth/logout') ?>" class="btn btn-outline-danger logout-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
 </div>

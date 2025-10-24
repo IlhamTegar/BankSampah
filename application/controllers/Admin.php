@@ -126,4 +126,32 @@ class Admin extends CI_Controller {
         }
         redirect('admin/dashboard');
     }
+	public function manage_iuran()
+{
+    //$this->load->model('Admin_model');
+
+    // If admin updates biaya
+    if ($this->input->post('update_iuran')) {
+        $id_nasabah = $this->input->post('id_nasabah');
+        $biaya = $this->input->post('biaya');
+
+        $data = [
+            'id_nasabah' => $id_nasabah,
+            'biaya' => $biaya,
+            'deadline' => date('Y-m-d', strtotime('+30 days')),
+            'status_iuran' => 'belum bayar'
+        ];
+
+        $this->Admin_model->add_or_update_iuran($data);
+
+        $this->session->set_flashdata('success', 'Iuran berhasil diperbarui.');
+        redirect('admin/manage_iuran');
+    }
+
+    // Ambil semua nasabah + iuran jika ada
+    $data['nasabah_list'] = $this->Admin_model->get_all_nasabah_with_iuran();
+    $data['view_name'] = 'admin/manage_iuran';
+    $this->load->view('admin/layout', $data);
+}
+
 }

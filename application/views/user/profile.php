@@ -134,6 +134,61 @@
             </div>
         </div>
     </div>
+	<hr class="my-4">
+<h6 class="fw-bold mb-3">Data Nasabah</h6>
+
+<?php if ($nasabah): ?>
+    <div class="alert alert-info">
+        <strong>Tipe Nasabah:</strong> <?= ucfirst($nasabah['tipe_nasabah']); ?><br>
+        <strong>Jumlah Nasabah:</strong> <?= $nasabah['jumlah_nasabah']; ?>
+    </div>
+<?php else: ?>
+    <form action="<?= base_url('user/profile') ?>" method="POST" class="mt-3">
+        <input type="hidden" name="add_nasabah" value="1">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="tipe_nasabah" class="form-label">Tipe Nasabah</label>
+                <select class="form-select" id="tipe_nasabah" name="tipe_nasabah" required>
+                    <option value="">-- Pilih Tipe --</option>
+                    <option value="Perorangan">Perorangan</option>
+                    <option value="Kelompok">Kelompok</option>
+                </select>
+            </div>
+            <div class="col-md-6 mb-3" id="jumlah_nasabah_group" style="display: none;">
+                <label for="jumlah_nasabah" class="form-label">Jumlah Nasabah</label>
+                <input type="number" class="form-control" id="jumlah_nasabah" name="jumlah_nasabah" min="1">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success">Tambah Nasabah</button>
+    </form>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const tipeNasabah = document.getElementById("tipe_nasabah");
+        const jumlahGroup = document.getElementById("jumlah_nasabah_group");
+        const jumlahInput = document.getElementById("jumlah_nasabah");
+
+        // Hide initially
+        jumlahGroup.style.display = "none";
+
+        tipeNasabah.addEventListener("change", function() {
+            const value = this.value.toLowerCase();
+            if (value === "perorangan") {
+                jumlahGroup.style.display = "none"; // hide
+                jumlahInput.value = 1; // auto set 1
+            } else if (value === "kelompok") {
+                jumlahGroup.style.display = "block"; // show
+                jumlahInput.value = ""; // clear
+            } else {
+                jumlahGroup.style.display = "none"; // hide default
+                jumlahInput.value = "";
+            }
+        });
+    });
+    </script>
+<?php endif; ?>
+
+
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

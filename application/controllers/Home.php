@@ -88,7 +88,7 @@ class Home extends CI_Controller {
         $role = $this->input->post('role');
         
         $userData = [
-            'name' => $this->input->post('name'),
+            'nama' => $this->input->post('name'),
             'email' => $this->input->post('email'),
             'password' => password_hash($this->input->post('password'), PASSWORD_BCRYPT),
             'phone' => $this->input->post('phone'),

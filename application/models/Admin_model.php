@@ -68,4 +68,31 @@ class Admin_model extends CI_Model {
         $this->db->where('id_agent', $agent_id);
         return $this->db->update('agent', ['status' => 'nonaktif']);
     }
+	public function get_all_nasabah_with_iuran()
+{
+    $this->db->select('n.id_nasabah, n.tipe_nasabah, n.jumlah_nasabah, i.biaya, i.deadline, i.status_iuran');
+    $this->db->from('nasabah n');
+    $this->db->join('iuran i', 'i.id_nasabah = n.id_nasabah', 'left');
+    return $this->db->get()->result_array();
+}
+
+
+public function add_or_update_iuran($data)
+{
+    $existing = $this->db->get_where('iuran', ['id_nasabah' => $data['id_nasabah']])->row_array();
+
+    if ($existing) {
+        // Update existing iuran
+        $this->db->where('id_nasabah', $data['id_nasabah']);
+        return $this->db->update('iuran', [
+            'biaya' => $data['biaya'],
+            'deadline' => $data['deadline'],
+            'status_iuran' => 'belum bayar'
+        ]);
+    } else {
+        // Insert new iuran
+        return $this->db->insert('iuran', $data);
+    }
+}
+
 }
