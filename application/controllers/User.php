@@ -67,88 +67,177 @@ class User extends CI_Controller {
 
     public function waste_banks()
     {
-        $data['agents'] = $this->User_model->get_all_active_agents();
+        $user_id = $this->session->userdata('user_id');
+        $user_profile = $this->User_model->get_user_profile($user_id);
+
+        // Ambil ID agent pilihan user (jika ada) untuk dikirim ke view
+        $data['selected_agent_id'] = $user_profile['id_agent_pilihan'] ?? null;
+
+        // Cek apakah pengguna sudah punya lokasi ATAU sudah memilih agent
+        if (empty($user_profile['latitude']) || empty($user_profile['longitude'])) {
+             // Jika BELUM punya lokasi DAN BELUM memilih agent -> Tampilkan semua agent
+             if (!$data['selected_agent_id']) {
+                  $this->session->set_flashdata('info', 'Atur lokasi Anda di profil untuk melihat bank sampah terdekat. Menampilkan semua bank sampah.');
+                  $data['agents'] = $this->User_model->get_all_active_agents();
+             }
+             // Jika BELUM punya lokasi TAPI SUDAH memilih agent -> Tampilkan agent pilihan
+             else {
+                 $data['agents'] = $this->User_model->get_one_agent($data['selected_agent_id']);
+                 // Handle jika agent pilihan tidak valid/aktif
+                 if (empty($data['agents'])) {
+                     $this->session->set_flashdata('error', 'Bank sampah pilihan Anda tidak ditemukan/aktif. Pilihan direset.');
+                     $this->User_model->set_chosen_agent($user_id, null);
+                     $data['selected_agent_id'] = null;
+                     $data['agents'] = $this->User_model->get_all_active_agents(); // Tampilkan semua sebagai fallback
+                 }
+             }
+        }
+        // Jika SUDAH punya lokasi
+        else {
+            $data['user_location'] = ['lat' => $user_profile['latitude'], 'lng' => $user_profile['longitude']];
+
+            // Jika SUDAH memilih agent -> Tampilkan agent pilihan
+            if ($data['selected_agent_id']) {
+                 $data['agents'] = $this->User_model->get_one_agent($data['selected_agent_id']);
+                 // Handle jika agent pilihan tidak valid/aktif
+                 if (empty($data['agents'])) {
+                     $this->session->set_flashdata('error', 'Bank sampah pilihan Anda tidak ditemukan/aktif. Pilihan direset.');
+                     $this->User_model->set_chosen_agent($user_id, null);
+                     $data['selected_agent_id'] = null;
+                      // Tampilkan yang terdekat sebagai fallback
+                     $data['agents'] = $this->User_model->get_nearest_agents($user_profile['latitude'], $user_profile['longitude']);
+                      if(empty($data['agents'])) { // Jika terdekat juga kosong
+                           $data['agents'] = $this->User_model->get_all_active_agents();
+                      }
+                 }
+            }
+            // Jika BELUM memilih agent -> Cari yang terdekat
+            else {
+                $data['agents'] = $this->User_model->get_nearest_agents($user_profile['latitude'], $user_profile['longitude']);
+                if (empty($data['agents'])) {
+                    $this->session->set_flashdata('info', 'Tidak ada bank sampah dalam radius 10km. Menampilkan semua.');
+                    $data['agents'] = $this->User_model->get_all_active_agents();
+                }
+            }
+        }
+
         $data['view_name'] = 'user/waste_banks';
         $this->load->view('user/layout', $data);
+    }
+
+
+    public function select_agent($agent_id)
+    {
+        // Bisa pakai AJAX (lebih baik) atau redirect biasa
+        // if (!$this->input->is_ajax_request()) { show_404(); } // Aktifkan jika pakai AJAX
+
+        $user_id = $this->session->userdata('user_id');
+        $agent_id = (int) $agent_id;
+
+        $agent_exists = $this->db->get_where('agent', ['id_agent' => $agent_id, 'status' => 'aktif'])->num_rows() > 0;
+
+        if ($user_id && $agent_id > 0 && $agent_exists) {
+            if ($this->User_model->set_chosen_agent($user_id, $agent_id)) {
+                // Response untuk AJAX
+                 if ($this->input->is_ajax_request()){
+                    $this->output->set_content_type('application/json')->set_output(json_encode(['success' => true]));
+                    return;
+                 }
+                 // Redirect jika bukan AJAX
+                 $this->session->set_flashdata('success', 'Bank sampah berhasil dipilih.');
+                 redirect('user/waste_banks');
+
+            } else {
+                 if ($this->input->is_ajax_request()){
+                    $this->output->set_status_header(500)->set_content_type('application/json')->set_output(json_encode(['success' => false, 'message' => 'Database error.']));
+                    return;
+                 }
+                 $this->session->set_flashdata('error', 'Gagal memilih bank sampah.');
+                 redirect('user/waste_banks');
+            }
+        } else {
+            if ($this->input->is_ajax_request()){
+                 $this->output->set_status_header(400)->set_content_type('application/json')->set_output(json_encode(['success' => false, 'message' => 'Agent tidak valid.']));
+                 return;
+            }
+            $this->session->set_flashdata('error', 'Bank sampah tidak valid.');
+            redirect('user/waste_banks');
+        }
     }
 
     public function profile()
     {
         $user_id = $this->session->userdata('user_id');
-        $this->load->database();
 
-        // === 1️⃣ ADD NASABAH SECTION (handle first if form submitted) ===
-        if ($this->input->post('add_nasabah')) {
-            $nasabah = $this->User_model->get_nasabah_by_user($user_id);
-
-            if (!$nasabah) {
+        // Proses update jika ada form POST
+        if ($this->input->post()) {
+            // Cek apakah ini submit form 'add_nasabah'
+            if ($this->input->post('add_nasabah') == '1') {
                 $tipe = $this->input->post('tipe_nasabah');
-                $jumlah = $this->input->post('jumlah_nasabah');
+                $jumlah = ($tipe == 'Kelompok') ? $this->input->post('jumlah_nasabah') : 0; // Jumlah 0 untuk perorangan
 
-                // 🧩 Make sure jumlah_nasabah = 1 if Perorangan
-                if ($tipe === 'Perorangan') {
-                    $jumlah = 1;
+                // Validasi jumlah jika kelompok
+                if ($tipe == 'Kelompok' && (!is_numeric($jumlah) || $jumlah < 2)) {
+                    $this->session->set_flashdata('error', 'Jumlah anggota untuk kelompok minimal 2.');
+                    redirect('user/profile');
+                    return; // Hentikan eksekusi
                 }
 
-                $data_nasabah = [
-                    'id_users'       => $user_id,
-                    'tipe_nasabah'   => $tipe,
+                $nasabah_data = [
+                    'tipe_nasabah' => $tipe,
                     'jumlah_nasabah' => $jumlah
                 ];
-
-                if ($this->User_model->add_nasabah($data_nasabah)) {
-                    $this->session->set_flashdata('success', 'Data nasabah berhasil ditambahkan.');
+                if ($this->User_model->update_profile_direct($user_id, $nasabah_data)) { // Gunakan fungsi update langsung
+                    $this->session->set_flashdata('success', 'Tipe nasabah berhasil disimpan.');
                 } else {
-                    $this->session->set_flashdata('error', 'Gagal menambahkan data nasabah.');
+                    $this->session->set_flashdata('error', 'Gagal menyimpan tipe nasabah.');
                 }
-            } else {
-                $this->session->set_flashdata('error', 'Anda sudah memiliki data nasabah.');
-            }
 
+            } else { // Proses update profil biasa
+                $update_data = [
+                    'nama'      => $this->input->post('name'),
+                    'phone'     => $this->input->post('phone'),
+                    'address'   => $this->input->post('address'), // Tetap simpan alamat teks
+                    'bio'       => $this->input->post('bio'),
+                    'latitude'  => $this->input->post('latitude') ?: NULL,
+                    'longitude' => $this->input->post('longitude') ?: NULL,
+                ];
+
+                // Hanya update password jika diisi
+                if ($this->input->post('password')) {
+                    $update_data['password'] = password_hash($this->input->post('password'), PASSWORD_BCRYPT);
+                }
+
+                if ($this->User_model->update_profile_direct($user_id, $update_data)) { // Gunakan fungsi update langsung
+                    $this->session->set_userdata('name', $update_data['nama']);
+                    $this->session->set_flashdata('success', 'Profil berhasil diperbarui.');
+                } else {
+                    $this->session->set_flashdata('error', 'Gagal memperbarui profil.');
+                }
+            }
             redirect('user/profile');
-            return;
         }
 
-        // === 2️⃣ UPDATE PROFILE SECTION ===
-        if ($this->input->post()) {
-            $update_data = [
-                'nama'      => $this->input->post('name'),
-                'phone'     => $this->input->post('phone'),
-                'address'   => $this->input->post('address'),
-                'bio'       => $this->input->post('bio'),
-                'latitude'  => $this->input->post('latitude') ?: NULL,
-                'longitude' => $this->input->post('longitude') ?: NULL,
-            ];
-
-            if ($this->input->post('password')) {
-                $update_data['password'] = password_hash($this->input->post('password'), PASSWORD_BCRYPT);
-            }
-
-            if ($this->User_model->update_profile($user_id, $update_data)) {
-                $this->session->set_userdata('name', $update_data['nama']);
-                $this->session->set_flashdata('success', 'Profil berhasil diperbarui.');
-            } else {
-                $this->session->set_flashdata('error', 'Gagal memperbarui profil.');
-            }
-
-            redirect('user/profile');
-            return;
-        }
-
-        // === 3️⃣ DISPLAY SECTION ===
+        // Menyiapkan data untuk ditampilkan di view
         $user_profile = $this->User_model->get_user_profile($user_id);
 
-        // Handle address display
-        $this->load->helper('location');
+        // Logika alamat display
         $address_display = 'Belum diisi';
         if (!empty($user_profile['latitude']) && !empty($user_profile['longitude'])) {
+            $this->load->helper('location');
             $address_display = get_address_from_coords($user_profile['latitude'], $user_profile['longitude']);
+            // Tambahkan fallback ke alamat teks jika reverse geocoding gagal atau alamat teks ada
+            if (($address_display === "Tidak dapat mengambil data lokasi" || $address_display === "Lokasi tidak ditemukan") && !empty($user_profile['address'])) {
+                $address_display = $user_profile['address'];
+            } elseif(!empty($user_profile['address'])) {
+                // Opsional: Gabungkan hasil geocoding dengan alamat teks
+                // $address_display .= ' (' . $user_profile['address'] . ')';
+                $address_display = $user_profile['address']; // Atau prioritaskan alamat teks jika ada
+            }
         } elseif (!empty($user_profile['address'])) {
             $address_display = $user_profile['address'];
         }
 
-        $nasabah = $this->User_model->get_nasabah_by_user($user_id);
-        $data['nasabah'] = $nasabah;
 
         $data['user'] = [
             'name'         => $user_profile['nama'],
@@ -161,7 +250,18 @@ class User extends CI_Controller {
             'raw_address'  => $user_profile['address'],
             'bio'          => !empty($user_profile['bio']) ? $user_profile['bio'] : 'Ceritakan tentang diri Anda.',
             'member_since' => date('M Y', strtotime($user_profile['created_at'])),
+            // Hapus 'customer_type' dari sini, kita siapkan di $data['nasabah']
         ];
+
+        // PERSIAPKAN DATA NASABAH UNTUK VIEW
+        if (!empty($user_profile['tipe_nasabah'])) {
+            $data['nasabah'] = [
+                'tipe_nasabah' => $user_profile['tipe_nasabah'],
+                'jumlah_nasabah' => $user_profile['jumlah_nasabah'] ?? 0 // Ambil jumlah jika ada
+            ];
+        } else {
+            $data['nasabah'] = null; // Kirim null jika belum ada tipe
+        }
 
         $data['stats'] = [
             'collections'     => $this->User_model->count_user_transactions($user_id),

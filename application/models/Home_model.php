@@ -137,7 +137,8 @@ class Home_model extends CI_Model {
 
     public function get_agent_status($user_id)
     {
-        $this->db->select('status');
+        // PERBAIKAN: Tambahkan 'id_agent' ke select
+        $this->db->select('status, id_agent');
         $this->db->where('id_user', $user_id);
         return $this->db->get('agent')->row_array();
     }
