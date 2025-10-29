@@ -59,6 +59,12 @@
                 <button onclick="toggleDetail('wasteDetail')" class="mt-4 text-blue-600 underline">Lihat Detail</button> </div>
             <div class="bg-white p-6 rounded-xl shadow text-center flex flex-col justify-between">
                 <div>
+                    <div class="text-3xl">🙋‍♂️🙋‍♀️</div> <h3 class="text-xl font-bold"><?= $summary['total_customers']; // Pastikan variabel ini benar ?></h3>
+                    <p class="text-gray-600">Total Nasabah Terdaftar</p>
+                </div>
+                <button onclick="toggleDetail('customerDetail')" class="mt-4 text-blue-600 underline">Lihat Detail</button> </div>
+            <div class="bg-white p-6 rounded-xl shadow text-center flex flex-col justify-between">
+                <div>
                     <div class="text-3xl">👥</div>
                     <h3 class="text-xl font-bold"><?= $summary['active_agents']; ?></h3>
                     <p class="text-gray-600">Agen Aktif</p> </div>
@@ -90,6 +96,12 @@
     <div id="agentDetail" class="hidden max-w-5xl mx-auto bg-white p-6 -mt-8 mb-6 rounded-xl shadow relative z-10">
         <h3 class="text-xl font-bold mb-4 text-center">Distribusi Agen per Wilayah</h3> <div class="h-80">
             <canvas id="agentDistributionChart"></canvas>
+        </div>
+    </div>
+
+    <div id="customerDetail" class="hidden max-w-5xl mx-auto bg-white p-6 -mt-8 mb-6 rounded-xl shadow relative z-10">
+        <h3 class="text-xl font-bold mb-4 text-center">Distribusi Nasabah per Wilayah Agen</h3>
+        <div class="h-80"> <canvas id="customerDistributionChart"></canvas>
         </div>
     </div>
 
@@ -141,64 +153,131 @@ document.addEventListener('DOMContentLoaded', () => {
      * dan akan menutup detail yang aktif jika tombolnya diklik lagi.
      */
     function toggleDetail(id) {
-        const allDetails = ['wasteDetail', 'agentDetail', 'priceDetail'];
+        // Tambahkan 'customerDetail' ke dalam array ini
+        const allDetails = ['wasteDetail', 'agentDetail', 'customerDetail', 'priceDetail'];
         const targetElement = document.getElementById(id);
 
-        if (!targetElement) return;
+        if (!targetElement) {
+             console.error(`Element with ID "${id}" not found.`); // Pesan error jika ID tidak ada
+             return;
+        }
 
+        // Cek apakah elemen yang diklik sudah terlihat sebelum proses
         const isAlreadyVisible = !targetElement.classList.contains('hidden');
 
+        // Selalu sembunyikan semua detail terlebih dahulu
         allDetails.forEach(detailId => {
-            document.getElementById(detailId).classList.add('hidden');
+             const detailElement = document.getElementById(detailId);
+             if (detailElement) { // Hanya sembunyikan jika elemennya ada
+                 detailElement.classList.add('hidden');
+             } else {
+                 console.warn(`Detail element with ID "${detailId}" not found during hide process.`);
+             }
         });
 
+        // Jika elemen yang diklik TADI BELUM TERLIHAT, maka sekarang tampilkan
         if (!isAlreadyVisible) {
             targetElement.classList.remove('hidden');
+            // Scroll ke elemen detail (opsional, untuk UX yang lebih baik)
+             targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
-    window.toggleDetail = toggleDetail;
+    window.toggleDetail = toggleDetail; // Membuat fungsi bisa dipanggil dari HTML (onclick)
 
-    // Data dari PHP
-    const wasteLabels = <?= json_encode(array_column($waste_stats, 'name')); ?>;
-    const wasteData = <?= json_encode(array_column($waste_stats, 'amount')); ?>;
-    const months = <?= json_encode(array_column($monthly_stats, 'month')); ?>;
-    const monthData = <?= json_encode(array_column($monthly_stats, 'amount')); ?>;
-    const agentDistributionLabels = <?= $agent_distribution_labels; ?>;
-    const agentDistributionData = <?= $agent_distribution_data; ?>;
+    // Data dari PHP (Pastikan semua variabel ini dikirim dari Controller Home.php)
+    const wasteLabels = <?= json_encode(array_column($waste_stats ?? [], 'name')); ?>;
+    const wasteData = <?= json_encode(array_column($waste_stats ?? [], 'amount')); ?>;
+    const months = <?= json_encode(array_column($monthly_stats ?? [], 'month')); ?>;
+    const monthData = <?= json_encode(array_column($monthly_stats ?? [], 'amount')); ?>;
+    const agentDistributionLabels = <?= $agent_distribution_labels ?? '[]'; ?>;
+    const agentDistributionData = <?= $agent_distribution_data ?? '[]'; ?>;
+    const customerDistributionLabels = <?= $customer_distribution_labels ?? '[]'; ?>; // Data Nasabah
+    const customerDistributionData = <?= $customer_distribution_data ?? '[]'; ?>;   // Data Nasabah
+    const priceChartLabels = <?= $price_chart_labels ?? '[]'; ?>;
+    const priceChartCurrent = <?= $price_chart_current ?? '[]'; ?>;
+    const priceChartPrevious = <?= $price_chart_previous ?? '[]'; ?>;
 
-    // Chart Pie
+    // Chart Pie Sampah
     const pieCtx = document.getElementById("wastePieChart");
-    if(pieCtx) { new Chart(pieCtx, { type: "pie", data: { labels: wasteLabels, datasets: [{ data: wasteData, backgroundColor: ["#f87171", "#60a5fa", "#34d399", "#fbbf24", "#d971f8ff"] }] }, options: { responsive: true, maintainAspectRatio: false } }); }
+    if(pieCtx && wasteLabels.length > 0) { // Hanya buat chart jika ada data
+        new Chart(pieCtx, {
+            type: "pie",
+            data: {
+                labels: wasteLabels,
+                datasets: [{ data: wasteData, backgroundColor: ["#f87171", "#60a5fa", "#34d399", "#fbbf24", "#d971f8ff"] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
 
-    // Chart Bar Sampah
+    // Chart Bar Sampah Bulanan
     const barCtx = document.getElementById("wasteBarChart");
-    if (barCtx) { new Chart(barCtx, { type: "bar", data: { labels: months, datasets: [{ label: "Total Sampah (kg)", data: monthData, backgroundColor: "#34d399" }] } }); } // Diubah
+    if (barCtx && months.length > 0) {
+        new Chart(barCtx, {
+            type: "bar",
+            data: {
+                labels: months,
+                datasets: [{ label: "Total Sampah (kg)", data: monthData, backgroundColor: "#34d399" }]
+            },
+             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } } // Tambahkan options
+        });
+    }
 
     // Chart Bar Persebaran Agen
     const agentCtx = document.getElementById("agentDistributionChart");
-    if(agentCtx) { new Chart(agentCtx, { type: 'bar', data: { labels: agentDistributionLabels, datasets: [{ label: 'Jumlah Agen', data: agentDistributionData, backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }] }, options: { indexAxis: 'x', responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); } // Diubah
+    if(agentCtx && agentDistributionLabels.length > 0) {
+        new Chart(agentCtx, {
+            type: 'bar',
+            data: {
+                labels: agentDistributionLabels,
+                datasets: [{ label: 'Jumlah Agen', data: agentDistributionData, backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }]
+            },
+            options: { indexAxis: 'x', responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    }
 
-    // Data & Chart untuk Harga Sampah
-    const priceChartLabels = <?= $price_chart_labels; ?>;
-    const priceChartCurrent = <?= $price_chart_current; ?>;
-    const priceChartPrevious = <?= $price_chart_previous; ?>;
+     // Chart Bar Persebaran Nasabah
+    const customerCtx = document.getElementById("customerDistributionChart");
+    if (customerCtx && customerDistributionLabels.length > 0) {
+        new Chart(customerCtx, {
+            type: 'bar',
+            data: {
+                labels: customerDistributionLabels,
+                datasets: [{
+                    label: 'Jumlah Nasabah',
+                    data: customerDistributionData,
+                    backgroundColor: 'rgba(251, 146, 60, 0.5)', // Warna berbeda
+                    borderColor: 'rgba(251, 146, 60, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'x',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                 plugins: { title: { display: true, text: 'Distribusi Nasabah Berdasarkan Wilayah Agen Pilihan' } }
+            }
+        });
+    }
 
+    // Chart Garis Harga Sampah
     const priceCtx = document.getElementById("wastePriceChart");
-    if(priceCtx) {
+    if(priceCtx && priceChartLabels.length > 0) {
         new Chart(priceCtx, {
             type: 'line',
             data: {
                 labels: priceChartLabels,
                 datasets: [
                     {
-                        label: 'Harga Minggu Ini (Rp)', // Diubah
+                        label: 'Harga Minggu Ini (Rp)',
                         data: priceChartCurrent,
                         borderColor: 'rgb(59, 130, 246)',
                         backgroundColor: 'rgba(59, 130, 246, 0.5)',
                         tension: 0.1
                     },
                     {
-                        label: 'Harga Minggu Lalu (Rp)', // Diubah
+                        label: 'Harga Minggu Lalu (Rp)',
                         data: priceChartPrevious,
                         borderColor: 'rgb(209, 213, 219)',
                         backgroundColor: 'rgba(209, 213, 219, 0.5)',
@@ -213,32 +292,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: {
-                            callback: function(value, index, values) {
-                                return 'Rp ' + value.toLocaleString('id-ID');
-                            }
-                        }
+                        ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } }
                     }
                 }
             }
         });
     }
 
-    // Map
+    // Inisialisasi Peta Leaflet
     const mapElement = document.getElementById("map");
     if (mapElement) {
-        const defaultLat = -1.86667;
+        const defaultLat = -1.86667; // Pusat Indonesia (perkiraan)
         const defaultLng = 114.73333;
-        const map = L.map("map").setView([defaultLat, defaultLng], 10);
+        const map = L.map("map").setView([defaultLat, defaultLng], 5); // Zoom out sedikit
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
-        <?php foreach($agents as $a): ?>
-            <?php if(isset($a['lat']) && isset($a['lng'])): ?>
-            L.marker([<?= $a['lat']; ?>, <?= $a['lng']; ?>]).addTo(map).bindPopup("<b><?= addslashes(htmlspecialchars($a['name'])); ?></b><br><?= addslashes(htmlspecialchars($a['area'])); ?>");
-            <?php endif; ?>
-        <?php endforeach; ?>
+        // Ambil data agen dari PHP (pastikan ada di view)
+        const agentsData = <?= json_encode($agents ?? []); ?>;
 
+        agentsData.forEach(agent => {
+            if (agent.lat && agent.lng) { // Pastikan lat & lng ada
+                L.marker([agent.lat, agent.lng])
+                 .addTo(map)
+                 .bindPopup(`<b>${agent.name}</b><br>${agent.area}`);
+            }
+        });
+
+        // Invalidate map size setelah beberapa saat
         setTimeout(() => { map.invalidateSize(); }, 400);
     }
-});
+
+}); // Akhir DOMContentLoaded
 </script>

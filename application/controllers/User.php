@@ -76,21 +76,19 @@ class User extends CI_Controller {
         // Cek apakah pengguna sudah punya lokasi ATAU sudah memilih agent
         if (empty($user_profile['latitude']) || empty($user_profile['longitude'])) {
              // Jika BELUM punya lokasi DAN BELUM memilih agent -> Tampilkan semua agent
-             if (!$data['selected_agent_id']) {
-                  $this->session->set_flashdata('info', 'Atur lokasi Anda di profil untuk melihat bank sampah terdekat. Menampilkan semua bank sampah.');
-                  $data['agents'] = $this->User_model->get_all_active_agents();
-             }
-             // Jika BELUM punya lokasi TAPI SUDAH memilih agent -> Tampilkan agent pilihan
-             else {
-                 $data['agents'] = $this->User_model->get_one_agent($data['selected_agent_id']);
-                 // Handle jika agent pilihan tidak valid/aktif
-                 if (empty($data['agents'])) {
-                     $this->session->set_flashdata('error', 'Bank sampah pilihan Anda tidak ditemukan/aktif. Pilihan direset.');
-                     $this->User_model->set_chosen_agent($user_id, null);
-                     $data['selected_agent_id'] = null;
-                     $data['agents'] = $this->User_model->get_all_active_agents(); // Tampilkan semua sebagai fallback
-                 }
-             }
+            if (!$data['selected_agent_id']) {
+                $this->session->set_flashdata('info', 'Atur lokasi Anda di profil untuk melihat bank sampah terdekat. Menampilkan semua bank sampah.');
+                $data['agents'] = $this->User_model->get_all_active_agents();
+            }
+            // Jika BELUM punya lokasi TAPI SUDAH memilih agent -> Tampilkan agent pilihan
+            else {
+                // Panggil dengan limit 4
+                $data['agents'] = $this->User_model->get_nearest_agents($user_profile['latitude'], $user_profile['longitude'], 10, 4);
+                if (empty($data['agents'])) {
+                    $this->session->set_flashdata('info', 'Tidak ada bank sampah dalam radius 10km. Menampilkan semua.');
+                    $data['agents'] = $this->User_model->get_all_active_agents();
+                }
+            }
         }
         // Jika SUDAH punya lokasi
         else {
@@ -100,16 +98,16 @@ class User extends CI_Controller {
             if ($data['selected_agent_id']) {
                  $data['agents'] = $this->User_model->get_one_agent($data['selected_agent_id']);
                  // Handle jika agent pilihan tidak valid/aktif
-                 if (empty($data['agents'])) {
-                     $this->session->set_flashdata('error', 'Bank sampah pilihan Anda tidak ditemukan/aktif. Pilihan direset.');
-                     $this->User_model->set_chosen_agent($user_id, null);
-                     $data['selected_agent_id'] = null;
-                      // Tampilkan yang terdekat sebagai fallback
-                     $data['agents'] = $this->User_model->get_nearest_agents($user_profile['latitude'], $user_profile['longitude']);
-                      if(empty($data['agents'])) { // Jika terdekat juga kosong
-                           $data['agents'] = $this->User_model->get_all_active_agents();
-                      }
-                 }
+                if (empty($data['agents'])) {
+                    $this->session->set_flashdata('error', 'Bank sampah pilihan tidak valid. Pilihan direset.');
+                    $this->User_model->set_chosen_agent($user_id, null);
+                    $data['selected_agent_id'] = null;
+                    // Tampilkan yang terdekat (maks 4) sebagai fallback
+                    $data['agents'] = $this->User_model->get_nearest_agents($user_profile['latitude'], $user_profile['longitude'], 10, 4); // Limit 4
+                    if(empty($data['agents'])) {
+                        $data['agents'] = $this->User_model->get_all_active_agents();
+                    }
+                }
             }
             // Jika BELUM memilih agent -> Cari yang terdekat
             else {
@@ -125,44 +123,66 @@ class User extends CI_Controller {
         $this->load->view('user/layout', $data);
     }
 
-
     public function select_agent($agent_id)
     {
-        // Bisa pakai AJAX (lebih baik) atau redirect biasa
-        // if (!$this->input->is_ajax_request()) { show_404(); } // Aktifkan jika pakai AJAX
-
+        // === DEFINISIKAN USER ID DI AWAL FUNGSI ===
         $user_id = $this->session->userdata('user_id');
+        // =====================================
+
+        // Pengecekan apakah user login (PENTING)
+        if (!$user_id) {
+            log_message('error', 'select_agent called without logged in user.');
+            if ($this->input->is_ajax_request()){
+            $this->output->set_status_header(401)->set_content_type('application/json')->set_output(json_encode(['success' => false, 'message' => 'User tidak login atau sesi berakhir.']));
+            return; // Tambahkan return
+            } else {
+                $this->session->set_flashdata('error', 'Sesi Anda berakhir, silakan login lagi.');
+                redirect(base_url());
+                return; // Tambahkan return
+            }
+        }
+
         $agent_id = (int) $agent_id;
 
-        $agent_exists = $this->db->get_where('agent', ['id_agent' => $agent_id, 'status' => 'aktif'])->num_rows() > 0;
-
-        if ($user_id && $agent_id > 0 && $agent_exists) {
-            if ($this->User_model->set_chosen_agent($user_id, $agent_id)) {
-                // Response untuk AJAX
-                 if ($this->input->is_ajax_request()){
-                    $this->output->set_content_type('application/json')->set_output(json_encode(['success' => true]));
-                    return;
-                 }
-                 // Redirect jika bukan AJAX
-                 $this->session->set_flashdata('success', 'Bank sampah berhasil dipilih.');
-                 redirect('user/waste_banks');
-
+        // Reset jika agent_id adalah 0
+        if ($agent_id === 0) {
+            if ($this->User_model->set_chosen_agent($user_id, null)) { // Sekarang $user_id ada nilainya
+                // Kirim JSON Sukses
+                $this->output->set_content_type('application/json')->set_output(json_encode(['success' => true, 'message' => 'Pilihan agent direset.']));
+                return; // Tambahkan return
             } else {
-                 if ($this->input->is_ajax_request()){
-                    $this->output->set_status_header(500)->set_content_type('application/json')->set_output(json_encode(['success' => false, 'message' => 'Database error.']));
-                    return;
-                 }
-                 $this->session->set_flashdata('error', 'Gagal memilih bank sampah.');
-                 redirect('user/waste_banks');
+                // Kirim JSON Gagal karena Model Gagal
+                $this->output->set_status_header(500)->set_content_type('application/json')->set_output(json_encode(['success' => false, 'message' => 'Gagal mereset pilihan di database.']));
+                return; // Tambahkan return
             }
-        } else {
-            if ($this->input->is_ajax_request()){
-                 $this->output->set_status_header(400)->set_content_type('application/json')->set_output(json_encode(['success' => false, 'message' => 'Agent tidak valid.']));
-                 return;
-            }
-            $this->session->set_flashdata('error', 'Bank sampah tidak valid.');
-            redirect('user/waste_banks');
         }
+        // Jika agent_id BUKAN 0, proses pemilihan seperti biasa
+        else {
+            $agent_exists = $this->db->get_where('agent', ['id_agent' => $agent_id, 'status' => 'aktif'])->num_rows() > 0;
+
+            if ($user_id && $agent_id > 0 && $agent_exists) {
+                if ($this->User_model->set_chosen_agent($user_id, $agent_id)) {
+                    // Kirim JSON Sukses
+                    $this->output->set_content_type('application/json')->set_output(json_encode(['success' => true]));
+                    return; // Tambahkan return
+                } else {
+                    // Kirim JSON Gagal karena Model Gagal
+                    $this->output->set_status_header(500)
+                                ->set_content_type('application/json')
+                                ->set_output(json_encode(['success' => false, 'message' => 'Gagal menyimpan pilihan agent ke database.']));
+                    return; // Tambahkan return
+                }
+            } else {
+                // Kirim JSON Gagal karena Agent Tidak Valid
+                $this->output->set_status_header(400) // Bad Request
+                            ->set_content_type('application/json')
+                            ->set_output(json_encode(['success' => false, 'message' => 'Agent tidak valid atau tidak aktif.']));
+                return; // Tambahkan return
+            }
+        }
+        // Jika ada skenario yang tidak tertangani (seharusnya tidak terjadi),
+        // Anda bisa tambahkan default response di sini
+        // $this->output->set_status_header(500)->set_content_type('application/json')->set_output(json_encode(['success' => false, 'message' => 'Kesalahan server tidak terduga.']));
     }
 
     public function profile()

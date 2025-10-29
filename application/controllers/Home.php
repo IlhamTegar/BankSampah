@@ -13,8 +13,9 @@ class Home extends CI_Controller {
     {
         // 🔹 Ambil data summary
         $data['summary'] = [
-            'total_waste'   => $this->Home_model->get_total_waste(),
-            'active_agents' => $this->Home_model->get_active_agents()
+            'total_waste'     => $this->Home_model->get_total_waste(),
+            'active_agents'   => $this->Home_model->get_active_agents(),
+            'total_customers' => $this->Home_model->get_total_customers() // <-- BARIS BARU
         ];
 
         // 🔹 Ambil statistik per jenis sampah (pie chart)
@@ -60,6 +61,10 @@ class Home extends CI_Controller {
             $data['agents'][] = $agent_data;
         }
 
+        $customer_distribution = $this->Home_model->get_customer_distribution_by_area();
+        $data['customer_distribution_labels'] = json_encode(array_column($customer_distribution, 'wilayah'));
+        $data['customer_distribution_data'] = json_encode(array_column($customer_distribution, 'total'));
+
         // 🔹 BARU: Ambil data untuk fitur harga
         $data['latest_prices'] = $this->Home_model->get_latest_prices_summary();
         $data['waste_categories'] = $this->Home_model->get_waste_categories();
@@ -76,7 +81,7 @@ class Home extends CI_Controller {
         $data['price_chart_previous'] = json_encode(array_column($price_history, 'harga_sebelumnya'));
 
         // 🔹 Tambahan data untuk layout
-        $data['title']   = "Garbage Bank - Home";
+        $data['title']   = "Garbage Bank - Beranda";
         $data['content'] = 'landing';
 
         // 🔹 Muat layout utama

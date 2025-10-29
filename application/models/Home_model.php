@@ -30,6 +30,26 @@ class Home_model extends CI_Model {
         return $this->db->get()->result_array();
     }
 
+    public function get_total_customers() {
+        $this->db->where('role', 'user'); // Filter hanya user dengan role 'user'
+        return $this->db->count_all_results('users'); // Hitung jumlah baris di tabel 'users'
+    }
+
+    /**
+     * Mengambil distribusi nasabah berdasarkan wilayah agent yang mereka pilih
+     */
+    public function get_customer_distribution_by_area()
+    {
+        $this->db->select('a.wilayah, COUNT(u.id_user) as total');
+        $this->db->from('users u');
+        $this->db->join('agent a', 'u.id_agent_pilihan = a.id_agent', 'inner'); // INNER JOIN hanya user yg sudah memilih agent
+        $this->db->where('u.role', 'user');
+        $this->db->where('a.wilayah IS NOT NULL'); // Pastikan wilayah agent ada
+        $this->db->group_by('a.wilayah');
+        $this->db->order_by('total', 'DESC');
+        return $this->db->get()->result_array();
+    }
+
     // ===============================
     // === 2️⃣ STATISTIK SAMPAH ===
     // ===============================
