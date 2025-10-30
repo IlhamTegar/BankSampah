@@ -168,5 +168,25 @@ class Home_model extends CI_Model {
         $this->db->where('email', $email);
         return $this->db->get('users')->row_array();
     }
+
+    public function get_price_history_filtered($category_id = null, $month = null, $year = null)
+    {
+        $this->db->select('js.nama_jenis, hh.harga, hh.tanggal_update');
+        $this->db->from('harga_histori hh');
+        $this->db->join('jenis_sampah js', 'hh.id_jenis = js.id_jenis', 'left');
+
+        if ($category_id) {
+            $this->db->where('js.id_kategori', $category_id);
+        }
+        if ($month) {
+            $this->db->where('MONTH(hh.tanggal_update)', $month);
+        }
+        if ($year) {
+            $this->db->where('YEAR(hh.tanggal_update)', $year);
+        }
+
+        $this->db->order_by('hh.tanggal_update', 'ASC');
+        return $this->db->get()->result_array();
+    }
 }
 
