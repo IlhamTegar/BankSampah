@@ -86,33 +86,62 @@ class Home extends CI_Controller {
     }
 
     public function register()
-    {
-        $role = $this->input->post('role');
-        
-        $userData = [
-            'nama' => $this->input->post('name'),
-            'email' => $this->input->post('email'),
-            'password' => password_hash($this->input->post('password'), PASSWORD_BCRYPT),
-            'phone' => $this->input->post('phone'),
-            'role' => $role
+{
+    $role = $this->input->post('role');
+    
+    $userData = [
+        'nama' => $this->input->post('name'),
+        'email' => $this->input->post('email'),
+        'password' => password_hash($this->input->post('password'), PASSWORD_BCRYPT),
+        'phone' => $this->input->post('phone'),
+        'role' => $role
+    ];
+
+    $userId = $this->Home_model->insert_user($userData);
+
+    if ($role === 'agent' && $userId) {
+        // =========================
+        // Jika role = agent
+        // =========================
+        $agentData = [
+            'id_user' => $userId,
+            'wilayah' => $this->input->post('wilayah'),
         ];
+        $this->Home_model->insert_agent($agentData);
+        
+        $this->session->set_flashdata('success', 'Registrasi sebagai Agent berhasil! Akun Anda sedang menunggu persetujuan dari Admin.');
+    
+    } elseif ($role === 'user' && $userId) {
+        // =========================
+        // Jika role = user (nasabah perorangan)
+        // =========================
+        $nasabahData = [
+            'id_users' => $userId,
+            'tipe_nasabah' => 'Perorangan',
+            'jumlah_nasabah' => 1
+        ];
+        $id_nasabah = $this->Home_model->insert_nasabah($nasabahData);
 
-        $userId = $this->Home_model->insert_user($userData);
-
-        if ($role === 'agent' && $userId) {
-            $agentData = [
-                'id_user' => $userId,
-                'wilayah' => $this->input->post('wilayah'),
+        // Tambahkan biaya iuran default (misalnya 18000)
+        if ($id_nasabah) {
+            $iuranData = [
+                'id_nasabah' => $id_nasabah,
+                'biaya' => 18000, // biaya iuran default
+                'deadline' => date('Y-m-d', strtotime('+1 month')), // contoh deadline 1 bulan dari sekarang
+                'status_iuran' => 'belum bayar'
             ];
-            $this->Home_model->insert_agent($agentData);
-            
-            $this->session->set_flashdata('success', 'Registrasi sebagai Agent berhasil! Akun Anda sedang menunggu persetujuan dari Admin.');
-        } else {
-            $this->session->set_flashdata('success', 'Registrasi berhasil! Silakan login.');
+            $this->Home_model->insert_iuran($iuranData);
         }
 
-        redirect(base_url());
+        $this->session->set_flashdata('success', 'Registrasi berhasil! Anda telah terdaftar sebagai Nasabah Perorangan.');
+    
+    } else {
+        $this->session->set_flashdata('success', 'Registrasi berhasil! Silakan login.');
     }
+
+    redirect(base_url());
+}
+
     
     public function login()
     {

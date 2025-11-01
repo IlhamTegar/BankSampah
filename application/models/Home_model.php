@@ -188,5 +188,17 @@ class Home_model extends CI_Model {
         $this->db->order_by('hh.tanggal_update', 'ASC');
         return $this->db->get()->result_array();
     }
+	public function insert_nasabah($data)
+{
+    $this->db->insert('nasabah', $data);
+    return $this->db->insert_id();
+}
+
+public function insert_iuran($data)
+{
+    $this->db->insert('iuran', $data);
+    return $this->db->insert_id();
+}
+
 }
 

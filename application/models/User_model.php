@@ -219,7 +219,30 @@ class User_model extends CI_Model {
     public function add_nasabah($data)
     {
         return $this->db->insert('nasabah', $data);
+
     }
+	public function reset_iuran($id_user, $biaya, $deadline)
+{
+    // Cari id_nasabah berdasarkan id_users
+    $nasabah = $this->db->get_where('nasabah', ['id_users' => $id_user])->row_array();
+
+    if ($nasabah) {
+        $data = [
+            'id_nasabah' => $nasabah['id_nasabah'],
+            'biaya' => $biaya,
+            'deadline' => $deadline,
+            'status_iuran' => 'belum bayar'
+        ];
+
+        // Hapus iuran lama jika ada, lalu buat ulang
+        $this->db->where('id_nasabah', $nasabah['id_nasabah']);
+        $this->db->delete('iuran');
+        return $this->db->insert('iuran', $data);
+    }
+
+    return false;
+}
+
 
     public function simpan()
     {
@@ -239,6 +262,27 @@ class User_model extends CI_Model {
         $this->db->insert('nasabah', $data);
         redirect('nasabah');
     }
+// === REKENING USER ===
+public function get_user_rekening($user_id)
+{
+    return $this->db->get_where('rekening_user', ['id_user' => $user_id])->row_array();
+}
+
+public function add_or_update_rekening($user_id, $no_rekening)
+{
+    $existing = $this->get_user_rekening($user_id);
+    if ($existing) {
+        $this->db->where('id_user', $user_id);
+        return $this->db->update('rekening_user', ['no_rekening' => $no_rekening]);
+    } else {
+        return $this->db->insert('rekening_user', [
+            'id_user' => $user_id,
+            'no_rekening' => $no_rekening
+        ]);
+    }
+}
+
+
 
 
 }

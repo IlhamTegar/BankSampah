@@ -82,17 +82,17 @@ public function add_or_update_iuran($data)
     $existing = $this->db->get_where('iuran', ['id_nasabah' => $data['id_nasabah']])->row_array();
 
     if ($existing) {
-        // Update existing iuran
+        // ✅ Update only biaya and status, keep the existing deadline
         $this->db->where('id_nasabah', $data['id_nasabah']);
         return $this->db->update('iuran', [
             'biaya' => $data['biaya'],
-            'deadline' => $data['deadline'],
             'status_iuran' => 'belum bayar'
         ]);
     } else {
-        // Insert new iuran
+        // Insert new iuran if not exists
         return $this->db->insert('iuran', $data);
     }
 }
+
 
 }
