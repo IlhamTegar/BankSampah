@@ -67,13 +67,12 @@ class Admin extends CI_Controller {
         redirect('admin/dashboard');
     }
     
-    // ... (Semua fungsi dashboard dan manajemen lainnya tetap sama) ...
     public function dashboard()
     {
         $data['pending_agents'] = $this->Admin_model->get_pending_agents();
         $data['unpaid_customers'] = $this->Admin_model->count_unpaid_customers();
         
-        $data['view_name'] = 'admin/dashboard';
+        $data['view_name'] = 'admin/dashboard'; // Menggunakan view_name
         $this->load->view('admin/layout', $data);
     }
 
@@ -86,27 +85,126 @@ class Admin extends CI_Controller {
             $this->session->set_flashdata('success', 'Harga sampah berhasil diperbarui.');
             redirect('admin/waste_prices');
         }
+        
+        // Cek jika ini adalah request untuk menambah jenis sampah baru
+        if ($this->input->post('add_waste_type')) {
+             $data = [
+                'id_kategori' => $this->input->post('id_kategori'),
+                'nama_jenis' => $this->input->post('nama_jenis'),
+                'harga' => $this->input->post('harga'),
+                'satuan' => $this->input->post('satuan')
+            ];
+            // Asumsi Anda punya model 'Admin_model' dengan method 'add_waste_type'
+            // $this->Admin_model->add_waste_type($data); 
+            $this->session->set_flashdata('success', 'Jenis sampah baru berhasil ditambahkan (Logika Model belum ada).');
+            redirect('admin/waste_prices');
+        }
 
         $data['waste_types'] = $this->Admin_model->get_all_waste_types();
-        $data['view_name'] = 'admin/waste_prices';
+        $data['view_name'] = 'admin/waste_prices'; // Menggunakan view_name
         $this->load->view('admin/layout', $data);
     }
 
     public function manage_agents()
     {
         $data['agents'] = $this->Admin_model->get_all_agents();
-        $data['view_name'] = 'admin/manage_agents';
+        $data['view_name'] = 'admin/manage_agents'; // Menggunakan view_name
         $this->load->view('admin/layout', $data);
+    }
+
+    public function update_agent_status()
+    {
+        $id_agent = $this->input->post('id_agent');
+        $status = $this->input->post('status');
+        
+        // Asumsi ada fungsi ini di model, dari kode Anda yang terduplikat
+        // $this->Admin_model->update_agent_status($id_agent, $status);
+        
+        $this->session->set_flashdata('success', 'Status agen berhasil diperbarui (Logika Model belum ada).');
+        redirect('admin/manage_agents');
     }
 
     public function manage_users()
     {
         $data['users'] = $this->Admin_model->get_all_customers();
-        $data['view_name'] = 'admin/manage_users';
+        $data['view_name'] = 'admin/manage_users'; // Menggunakan view_name
         $this->load->view('admin/layout', $data);
     }
 
-    // --- AKSI ---
+    public function edit_user($id_user)
+    {
+        if (empty($id_user)) {
+            redirect('admin/manage_users');
+        }
+
+        // Proses form submission
+        if ($this->input->server('REQUEST_METHOD') == 'POST') {
+            $data_user = [
+                'nama'  => $this->input->post('nama'),
+                'email' => $this->input->post('email'),
+                'phone' => $this->input->post('phone'),
+                'role'  => $this->input->post('role')
+            ];
+
+            $password = $this->input->post('password');
+            if (!empty($password)) {
+                $data_user['password'] = password_hash($password, PASSWORD_BCRYPT);
+            }
+
+            $this->Admin_model->update_user($id_user, $data_user);
+
+            if ($data_user['role'] == 'agent') {
+                $data_agent = [
+                    'wilayah' => $this->input->post('wilayah')
+                ];
+                $this->Admin_model->update_agent_by_user_id($id_user, $data_agent);
+            }
+
+            $this->session->set_flashdata('success', 'Data user berhasil diperbarui.');
+            redirect('admin/' . ($data_user['role'] == 'agent' ? 'manage_agents' : 'manage_users'));
+
+        } else {
+            // Tampilkan form (GET)
+            $data['title'] = "Edit User";
+            $data['user'] = $this->Admin_model->get_user_by_id($id_user);
+            $data['wilayah_options'] = $this->Admin_model->get_wilayah_enum_values();
+ 
+            // === INI HARUS ADA DI SINI ===
+            $data['agent_data'] = []; 
+            // ============================
+
+            if (!$data['user']) {
+                $this->session->set_flashdata('error', 'User tidak ditemukan.');
+                redirect('admin/manage_users');
+            }
+
+            // Blok ini SEKARANG AMAN
+            if ($data['user']['role'] == 'agent') {
+                $data['agent_data'] = $this->Admin_model->get_agent_by_user_id($id_user);
+            }
+
+            $data['view_name'] = 'admin/edit_user';
+            $this->load->view('admin/layout', $data);
+        }
+    }
+
+    public function delete_user($id_user)
+    {
+        if (empty($id_user)) {
+            redirect('admin/dashboard');
+        }
+
+        $user = $this->Admin_model->get_user_by_id($id_user);
+        if ($user) {
+            $this->Admin_model->delete_user_and_related_data($id_user);
+            $this->session->set_flashdata('success', 'User dan data terkait (agent/nasabah) berhasil dihapus.');
+            redirect('admin/' . ($user['role'] == 'agent' ? 'manage_agents' : 'manage_users'));
+        } else {
+            $this->session->set_flashdata('error', 'User tidak ditemukan.');
+            redirect('admin/dashboard');
+        }
+    }
+
     public function approve_agent($agent_id)
     {
         if ($this->Admin_model->approve_agent($agent_id)) {
@@ -127,11 +225,8 @@ class Admin extends CI_Controller {
         redirect('admin/dashboard');
     }
 
-	public function manage_iuran()
+    public function manage_iuran()
     {
-        //$this->load->model('Admin_model');
-
-        // If admin updates biaya
         if ($this->input->post('update_iuran')) {
             $id_nasabah = $this->input->post('id_nasabah');
             $biaya = $this->input->post('biaya');
@@ -144,23 +239,18 @@ class Admin extends CI_Controller {
             ];
 
             $this->Admin_model->add_or_update_iuran($data);
-
             $this->session->set_flashdata('success', 'Iuran berhasil diperbarui.');
             redirect('admin/manage_iuran');
         }
 
-        // Ambil semua nasabah + iuran jika ada
         $data['nasabah_list'] = $this->Admin_model->get_all_nasabah_with_iuran();
-        $data['view_name'] = 'admin/manage_iuran';
+        $data['view_name'] = 'admin/manage_iuran'; // Menggunakan view_name
         $this->load->view('admin/layout', $data);
     }
 
     public function logout()
     {
-        // Hapus semua data session
         $this->session->sess_destroy();
-
-        // Redirect ke halaman utama (landing page)
         redirect('admin/login');
     }
 }
