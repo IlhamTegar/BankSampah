@@ -32,11 +32,26 @@ class User extends CI_Controller {
         $data['waste_labels'] = json_encode(array_column($waste_summary, 'waste_type'));
         $data['waste_data'] = json_encode(array_column($waste_summary, 'total_weight'));
 
-        $data['iuran'] = array(
-            'status' => 'paid',
-            'amount' => 20000,
-            'due_date' => '30 Oktober 2025'
-        );
+        // PERBAIKAN: Mengambil data iuran dari database
+        $iuran_data = $this->User_model->get_user_iuran($user_id);
+        
+        if ($iuran_data) {
+            $data['iuran'] = array(
+                'status' => $iuran_data['status'],
+                'amount' => $iuran_data['biaya'],
+                'due_date' => $iuran_data['due_date']
+            );
+        } else {
+             // Nilai default jika user belum terdaftar sebagai nasabah/iuran tidak ditemukan
+            $data['iuran'] = array(
+                'status' => 'na', // 'na' stands for Not Available (Belum Terdaftar)
+                'amount' => 0,
+                'due_date' => 'N/A'
+            );
+             // Pesan opsional untuk memberi tahu pengguna
+            $this->session->set_flashdata('info', 'Anda belum terdaftar sebagai Nasabah. Silakan daftar di halaman Profil untuk mulai mengumpulkan iuran.');
+        }
+
 
         $data['view_name'] = 'user/dashboard';
         $this->load->view('user/layout', $data);
