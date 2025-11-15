@@ -129,9 +129,15 @@
                     <label for="id_petugas" class="form-label">Petugas</label>
                     <select name="id_petugas" id="id_petugas" class="form-select">
                         <option value="">-- Pilih Petugas --</option>
-                        <?php foreach ($petugas as $p): ?>
+                        <?php 
+                        // Akses id_petugas yang aman dari $transaction (jika ada, gunakan yang disimpan)
+                        $current_petugas_id = $transaction['id_petugas'] ?? NULL;
+                        
+                        // Gunakan loop $petugas yang dimuat dari Admin Controller
+                        foreach ($petugas as $p): 
+                        ?>
                             <option value="<?= $p['id_petugas']; ?>"
-                                <?= set_select('id_petugas', $p['id_petugas'], $p['id_petugas'] == ($transaction['id_petugas'] ?? $current_petugas_id)); ?>>
+                                <?= set_select('id_petugas', $p['id_petugas'], $p['id_petugas'] == $current_petugas_id); ?>>
                                 <?= html_escape($p['nama_petugas']); ?>
                             </option>
                         <?php endforeach; ?>
@@ -152,6 +158,7 @@
 
 <script>
 let wasteIndex = <?= $item_index; ?>; // Lanjutkan indeks dari PHP
+// Hati-hati: Admin menggunakan fungsi Agen untuk AJAX. Pastikan route ini benar.
 const baseUrl = '<?= base_url('agent/get_jenis_by_kategori?id_kategori='); ?>'; 
 
 // 1. Logic for adding new waste item rows
@@ -218,4 +225,4 @@ document.addEventListener('change', function (e) {
         }
     }
 });
-</script>   
+</script>

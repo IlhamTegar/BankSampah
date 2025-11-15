@@ -23,8 +23,8 @@
 
             <?= form_open('agent/edit_transaction/' . $transaction['id_setoran']); ?>
             <div class="row mb-3">
-                <div class="col-md-4">
-                    <label for="customer_id" class="form-label">Nasabah <span class="text-danger">*</span></label>
+                <div class="col-md-6">
+                    <label for="customer_id" class="form-label">Pilih Nasabah <span class="text-danger">*</span></label>
                     <select name="customer_id" id="customer_id" class="form-select <?= form_error('customer_id') ? 'is-invalid' : ''; ?>" required>
                         <option value="">-- Pilih Nasabah Terdaftar --</option>
                         <?php foreach ($customers as $customer): ?>
@@ -36,17 +36,12 @@
                     </select>
                     <div class="invalid-feedback"><?= form_error('customer_id'); ?></div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label for="transaction_date" class="form-label">Tanggal Transaksi <span class="text-danger">*</span></label>
                     <input type="datetime-local" name="transaction_date" id="transaction_date"
                                    class="form-control <?= form_error('transaction_date') ? 'is-invalid' : ''; ?>"
                                    value="<?= set_value('transaction_date', date('Y-m-d\TH:i', strtotime($transaction['tanggal_setor']))); ?>" required>
                     <div class="invalid-feedback"><?= form_error('transaction_date'); ?></div>
-                </div>
-                <div class="col-md-4">
-                    <label for="agent_name_display" class="form-label">Bank Sampah (Agen)</label>
-                    <input type="text" id="agent_name_display" class="form-control" value="<?= html_escape($transaction['agent_name'] ?? 'N/A'); ?>" disabled>
-                    <input type="hidden" name="id_agent" value="<?= $transaction['id_agent']; ?>">
                 </div>
             </div>
 
@@ -107,16 +102,19 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
+
                         <div class="col-md-4">
                             <label class="form-label">Jenis Sampah</label>
                             <select class="form-select jenis_sampah" name="waste_items[0][id_jenis]" required>
                                 <option value="">-- Pilih Jenis --</option>
                             </select>
                         </div>
+
                         <div class="col-md-3">
                             <label class="form-label">Berat (kg)</label>
                             <input type="number" step="0.01" min="0" name="waste_items[0][berat]" class="form-control" placeholder="Berat (kg)" required>
                         </div>
+
                         <div class="col-md-1 d-flex align-items-end">
                             <button type="button" class="btn btn-danger btn-remove-item w-100">
                                 <i class="bi bi-trash"></i>
@@ -136,12 +134,17 @@
 
             <div class="row mb-3">
                 <div class="col-md-4">
-                    <label for="id_petugas" class="form-label">Petugas</label>
+                    <label for="petugas" class="form-label">Petugas</label>
                     <select name="id_petugas" id="id_petugas" class="form-select">
                         <option value="">-- Pilih Petugas --</option>
-                        <?php foreach ($petugas as $p): ?>
+                        <?php 
+                        // Akses id_petugas yang aman dari $transaction (misalnya jika disimpan di field lain)
+                        $current_petugas_id = $transaction['id_petugas'] ?? NULL;
+
+                        foreach ($petugas as $p): 
+                        ?>
                             <option value="<?= $p['id_petugas']; ?>" 
-                                <?= set_select('id_petugas', $p['id_petugas'], $p['id_petugas'] == ($transaction['id_petugas'] ?? NULL)); ?>>
+                                <?= set_select('id_petugas', $p['id_petugas'], $p['id_petugas'] == $current_petugas_id); ?>>
                                 <?= $p['nama_petugas']; ?>
                             </option>
                         <?php endforeach; ?>
@@ -161,10 +164,10 @@
 </div>
 
 <script>
-let wasteIndex = <?= $item_index; ?>;
+let wasteIndex = <?= $item_index; ?>; 
 const baseUrl = '<?= base_url('agent/get_jenis_by_kategori?id_kategori='); ?>'; 
 
-// 1. Logic for adding new waste item rows
+// 1. Logic for adding new waste item rows (Sama seperti di transactions.php)
 document.getElementById('addWasteItem').addEventListener('click', function () {
     const container = document.getElementById('wasteItemsContainer');
     const firstItem = container.querySelector('.waste-item');
@@ -203,7 +206,7 @@ document.addEventListener('click', function (e) {
     }
 });
 
-// 3. Logic to fetch waste types based on category selection
+// 3. Logic to fetch waste types based on category selection (Sama seperti di transactions.php)
 document.addEventListener('change', function (e) {
     if (e.target.classList.contains('kategori_sampah')) {
         const idKategori = e.target.value;

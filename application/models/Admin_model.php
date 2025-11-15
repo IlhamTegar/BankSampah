@@ -208,8 +208,11 @@ class Admin_model extends CI_Model {
     {
         $this->db->select('ts.id_setoran, ts.tanggal_setor, ts.total_berat, ts.total_poin, u_nasabah.nama as nasabah_name, u_agent.nama as agent_name');
         $this->db->from('transaksi_setoran ts');
+        // JOIN ke users untuk nama Nasabah
         $this->db->join('users u_nasabah', 'u_nasabah.id_user = ts.id_user', 'left');
+        // JOIN ke agent untuk mendapatkan id_user dari agent
         $this->db->join('agent a', 'a.id_agent = ts.id_agent', 'left');
+        // JOIN ke users lagi untuk nama Agent (Bank Sampah)
         $this->db->join('users u_agent', 'u_agent.id_user = a.id_user', 'left');
         $this->db->order_by('ts.tanggal_setor', 'DESC');
         return $this->db->get()->result_array();
@@ -234,7 +237,7 @@ class Admin_model extends CI_Model {
             $this->db->where('id_user', $user_id);
             $this->db->update('users');
             
-            // Hapus detail transaksi
+            // Hapus detail transaksi (perintah ini akan menghapus detail yang terikat)
             $this->db->where('id_setoran', $id_setoran)->delete('detail_setoran');
 
             // Hapus transaksi master record
@@ -247,13 +250,22 @@ class Admin_model extends CI_Model {
 
     /**
      * Mengambil data transaksi master, nasabah, dan agen yang terlibat.
+     * PERBAIKAN: Memastikan nama Agent (Bank Sampah) ikut terambil.
      */
     public function get_transaction_data($id_setoran)
     {
-        $this->db->select('ts.*, u_nasabah.nama as customer_name, a.id_agent, u_agent.nama as agent_name');
+        $this->db->select('
+            ts.*, 
+            u_nasabah.nama as customer_name, 
+            a.id_agent, 
+            u_agent.nama as agent_name
+        ');
         $this->db->from('transaksi_setoran ts');
-        $this->db->join('users u_nasabah', 'u_nasabah.id_user = ts.id_user');
+        // Join ke users untuk nama Nasabah
+        $this->db->join('users u_nasabah', 'u_nasabah.id_user = ts.id_user', 'left');
+        // Join ke agent untuk mendapatkan id_user dari agent
         $this->db->join('agent a', 'a.id_agent = ts.id_agent', 'left');
+        // Join ke users lagi untuk nama Agent (Bank Sampah)
         $this->db->join('users u_agent', 'u_agent.id_user = a.id_user', 'left');
         $this->db->where('ts.id_setoran', $id_setoran);
         return $this->db->get()->row_array();
@@ -288,7 +300,7 @@ class Admin_model extends CI_Model {
     /**
      * Mengupdate transaksi: koreksi saldo lama, hapus detail lama, simpan detail baru, koreksi saldo baru.
      */
-    public function update_transaction_and_user_balance($id_setoran, $old_total_poin, $customer_id, $transaction_date, $valid_waste_items)
+    public function update_transaction_and_user_balance($id_setoran, $old_total_poin, $customer_id, $transaction_date, $valid_waste_items, $id_agent_baru = null, $id_petugas = null)
     {
         $total_berat_transaksi = 0;
         $total_poin_transaksi = 0;
@@ -347,6 +359,17 @@ class Admin_model extends CI_Model {
             'total_berat'   => $total_berat_transaksi,
             'total_poin'    => $total_poin_transaksi
         ];
+        
+        // Khusus Admin: Perbarui Agen jika ada input baru (id_agent_baru)
+        if (!empty($id_agent_baru)) {
+            $setoran_data['id_agent'] = $id_agent_baru;
+        }
+        
+        // Perbarui id_petugas jika kolomnya ada di transaksi setoran (meskipun SQL Anda tidak menunjukkannya)
+        // Jika Anda ingin menyimpan id_petugas, Anda harus menambahkan kolom 'id_petugas' ke tabel 'transaksi_setoran' dulu.
+        // Untuk saat ini, kita biarkan kosong di sini.
+        // if (!empty($id_petugas) && KONDISI_KOLOM_PETUGAS_ADA) { $setoran_data['id_petugas'] = $id_petugas; }
+
         $this->db->where('id_setoran', $id_setoran);
         $this->db->update('transaksi_setoran', $setoran_data);
 

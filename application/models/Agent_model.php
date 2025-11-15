@@ -182,9 +182,19 @@ class Agent_model extends CI_Model {
 
     public function get_transaction_data($id_setoran)
     {
-        $this->db->select('ts.*, u.nama as customer_name');
+        $this->db->select('
+            ts.*, 
+            u_nasabah.nama as customer_name,
+            a.id_agent,
+            u_agent.nama as agent_name
+        ');
         $this->db->from('transaksi_setoran ts');
-        $this->db->join('users u', 'u.id_user = ts.id_user');
+        // Join ke users untuk nama Nasabah
+        $this->db->join('users u_nasabah', 'u_nasabah.id_user = ts.id_user', 'left'); 
+        // Join ke agent untuk mendapatkan id_user dari agent
+        $this->db->join('agent a', 'a.id_agent = ts.id_agent', 'left'); 
+        // Join ke users lagi untuk nama Agent (Bank Sampah)
+        $this->db->join('users u_agent', 'u_agent.id_user = a.id_user', 'left'); 
         $this->db->where('ts.id_setoran', $id_setoran);
         return $this->db->get()->row_array();
     }
