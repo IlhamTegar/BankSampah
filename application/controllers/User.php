@@ -76,14 +76,24 @@ class User extends CI_Controller {
         $data['selected_agent_id'] = isset($user_profile['id_agent_pilihan']) ? $user_profile['id_agent_pilihan'] : null;
 
         if (empty($user_profile['latitude']) || empty($user_profile['longitude'])) {
+            $this->session->set_flashdata('info', 'Atur lokasi Anda di profil untuk melihat bank sampah terdekat.');
+            
             if (!$data['selected_agent_id']) {
-                $this->session->set_flashdata('info', 'Atur lokasi Anda di profil untuk melihat bank sampah terdekat. Menampilkan semua bank sampah.');
+                // Jika lokasi kosong dan TIDAK ADA agen pilihan, tampilkan semua agen
                 $data['agents'] = $this->User_model->get_all_active_agents();
             } else {
-                $data['agents'] = $this->User_model->get_nearest_agents($user_profile['latitude'], $user_profile['longitude'], 10, 4);
+                // PERBAIKAN BUG 1582: Jika lokasi kosong, TAMPILKAN HANYA AGEN PILIHAN.
+                $data['agents'] = $this->User_model->get_one_agent($data['selected_agent_id']);
+                
                 if (empty($data['agents'])) {
-                    $this->session->set_flashdata('info', 'Tidak ada bank sampah dalam radius 10km. Menampilkan semua.');
+                    // Fallback jika agen pilihan tidak valid/tidak aktif
+                    $this->session->set_flashdata('error', 'Bank sampah pilihan tidak valid. Pilihan direset. Menampilkan semua bank sampah.');
+                    $this->User_model->set_chosen_agent($user_id, null);
+                    $data['selected_agent_id'] = null;
                     $data['agents'] = $this->User_model->get_all_active_agents();
+                } else {
+                    // Beri tahu user bahwa ini adalah agen pilihannya
+                    $this->session->set_flashdata('info', 'Lokasi Anda belum diatur, menampilkan Bank Sampah pilihan Anda.');
                 }
             }
         } else {

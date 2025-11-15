@@ -20,7 +20,7 @@
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
                     <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Wilayah</th>
                     <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                    <th class="px-4 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -28,7 +28,7 @@
                     <tr>
                         <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm"><?= htmlspecialchars($agent['nama']); ?></td>
                         <td class="px-5 py-2 border-b border-gray-200 bg-white text-sm"><?= htmlspecialchars($agent['email']); ?></td>
-                        <td class="px-5 py-2 border-b border-gray-200 bg-white text-sm"><?= htmlspecialchars($agent['wilayah']); ?></td>
+                        <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm"><?= htmlspecialchars($agent['wilayah']); ?></td>
                         <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm">
                             <form action="<?= base_url('admin/update_agent_status'); ?>" method="POST">
                                 <input type="hidden" name="id_agent" value="<?= $agent['id_agent']; ?>">
@@ -39,9 +39,18 @@
                                 </select>
                             </form>
                         </td>
-                        <td class="px-4 py-2 border-b border-gray-200 bg-white text-sm">
-                            <a href="<?= base_url('admin/edit_user/' . $agent['id_user']); ?>" class="text-blue-600 hover:text-blue-900 mr-3">Edit</a>
-                            <a href="<?= base_url('admin/delete_user/' . $agent['id_user']); ?>" class="text-red-600 hover:text-red-900" onclick="return confirm('Peringatan: Menghapus data user juga akan menghapus data agen/nasabah terkait. Yakin ingin menghapus user ini?');">Delete</a>
+                        <td class="px-6 py-2 border-b border-gray-200 bg-white text-sm">    
+                            <button type="button" 
+                                    onclick="window.location.href='<?= base_url('admin/edit_user/' . $agent['id_user']); ?>'" 
+                                    class="btn btn-primary btn-sm me-2"> 
+                                Edit
+                            </button>
+                            
+                            <button type="button" 
+                                    onclick="if(confirm('Peringatan: Menghapus data user juga akan menghapus data agen/nasabah terkait. Yakin ingin menghapus user ini?')) { window.location.href='<?= base_url('admin/delete_user/' . $agent['id_user']); ?>'; }"
+                                    class="btn btn-danger btn-sm">
+                                Delete
+                            </button>
                         </td>
                     </tr>
                 <?php endforeach; else: ?>
