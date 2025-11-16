@@ -387,5 +387,52 @@ class Admin_model extends CI_Model {
             return ['success' => true, 'message' => 'Transaksi berhasil diperbarui.'];
         }
     }
+
+    public function get_laporan_transaksi_admin($bulan = null, $tahun = null)
+    {
+        $this->db->select("
+            ts.tanggal_setor,
+            ru.no_rekening,
+            u.nama AS nama_nasabah,
+            agt.id_agent,
+            ua.nama AS nama_agent,
+            ts.id_setoran,
+            ts.total_poin AS pendapatan,
+            js.kode,
+            js.nama_jenis,
+            js.id_jenis,
+            ks.nama_kategori,
+            ts.total_berat,
+            ds.berat,
+            th.jumlah AS tarik_tunai,
+            u.saldo AS saldo_akhir,
+            tps.nama_tipe AS tipe_sampah,
+            p.nama_petugas,
+            hh.harga,
+            ds.berat AS jumlah_kg,
+            0 AS jumlah_botol
+        ");
+        $this->db->from('transaksi_setoran ts');
+        $this->db->join('detail_setoran ds', 'ds.id_setoran = ts.id_setoran', 'left');
+        $this->db->join('jenis_sampah js', 'js.id_jenis = ds.id_jenis', 'left');
+        $this->db->join('kategori_sampah ks', 'ks.id_kategori = js.id_kategori', 'left');
+        $this->db->join('harga_histori hh', 'hh.id_jenis = js.id_jenis', 'left');
+        $this->db->join('users u', 'u.id_user = ts.id_user', 'left');
+        $this->db->join('rekening_user ru', 'ru.id_user = u.id_user', 'left');
+        $this->db->join('tipe_sampah tps', 'tps.id_tipe_sampah = js.id_tipe_sampah', 'left');
+        $this->db->join('transaksi_penarikan th', 'th.id_user = u.id_user', 'left');
+        $this->db->join('agent agt', 'agt.id_agent = ts.id_agent', 'left');
+        $this->db->join('users ua', 'ua.id_user = agt.id_user', 'left'); // untuk nama agent
+        $this->db->join('petugas p', 'p.id_agent = ts.id_agent', 'left');
+
+        if ($bulan && $tahun) {
+            $this->db->where('MONTH(ts.tanggal_setor)', $bulan);
+            $this->db->where('YEAR(ts.tanggal_setor)', $tahun);
+        }
+
+        $this->db->order_by('ts.tanggal_setor', 'ASC');
+        $query = $this->db->get();
+        return $query->result_array();
+    }
     
 }
