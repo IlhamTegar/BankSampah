@@ -69,9 +69,38 @@ class Admin extends CI_Controller {
     
     public function dashboard()
     {
+        $this->load->model('Home_model');
+        
+        // Data Dashboard Admin Existing
         $data['pending_agents'] = $this->Admin_model->get_pending_agents();
         $data['unpaid_customers'] = $this->Admin_model->count_unpaid_customers();
         
+        // 1. Ambil data summary (Total Sampah)
+        $data['summary'] = [
+            'total_waste' => $this->Home_model->get_total_waste(),
+        ];
+        
+        // 2. Ambil statistik per jenis sampah (Pie Chart dan Total Jenis Sampah)
+        $waste_stats = $this->Home_model->get_waste_by_type();
+        $data['waste_stats'] = [];
+        foreach ($waste_stats as $ws) {
+            $data['waste_stats'][] = [
+                'name'   => $ws['name'],
+                'amount' => $ws['amount'] ? (float)$ws['amount'] : 0
+            ];
+        }
+
+        // 3. Ambil statistik bulanan (Bar Chart)
+        $monthly_stats = $this->Home_model->get_monthly_waste();
+        $data['monthly_stats'] = [];
+        foreach ($monthly_stats as $ms) {
+            $data['monthly_stats'][] = [
+                // Menggunakan "month" sebagai label, diasumsikan sudah diformat di model
+                'month'  => $ms['month'], 
+                'amount' => $ms['amount'] ? (float)$ms['amount'] : 0
+            ];
+        }
+
         $data['view_name'] = 'admin/dashboard'; // Menggunakan view_name
         $this->load->view('admin/layout', $data);
     }
