@@ -387,8 +387,8 @@ class Admin_model extends CI_Model {
             return ['success' => true, 'message' => 'Transaksi berhasil diperbarui.'];
         }
     }
-
-    public function get_laporan_transaksi_admin($bulan = null, $tahun = null)
+    
+	public function get_laporan_transaksi_admin($bulan = null, $tahun = null)
     {
         $this->db->select("
             ts.tanggal_setor,

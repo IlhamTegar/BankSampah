@@ -1,6 +1,13 @@
 <div class="container mx-auto p-6">
     <h2 class="text-2xl font-bold mb-4">Manajemen Agen</h2>
-    
+   
+<div class="mb-3">
+    <a href="<?= base_url('admin/export_agents'); ?>" 
+       class="btn btn-success">
+        <i class="bi bi-file-earmark-excel-fill"></i> Download Excel
+    </a>
+</div>
+
     <?php if($this->session->flashdata('success')): ?>
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
             <?= $this->session->flashdata('success'); ?>

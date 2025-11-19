@@ -437,6 +437,67 @@ class Admin extends CI_Controller {
         $data['view_name'] = 'admin/edit_transaction'; 
         $this->load->view('admin/layout', $data);
     }
+	public function export_users_excel()
+{
+    $this->load->model('Admin_model');
+    $users = $this->Admin_model->get_all_customers();
+
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=Daftar_Nasabah.xls");
+
+    echo "<table border='1'>
+            <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Telepon</th>
+                <th>Bank Sampah</th>
+            </tr>";
+
+    foreach ($users as $u) {
+
+        $bank = !empty($u['nama_agent']) ? $u['nama_agent'] : 'Belum Mendaftar';
+
+        echo "<tr>
+                <td>{$u['nama']}</td>
+                <td>{$u['email']}</td>
+                <td>{$u['phone']}</td>
+                <td>{$bank}</td>
+            </tr>";
+    }
+
+    echo "</table>";
+}
+public function export_agents()
+{
+    $this->load->model('Admin_model');
+
+    // Ambil semua data agen
+    $agents = $this->Admin_model->get_all_agents();
+
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=Daftar_Agen.xls");
+
+    echo "<table border='1'>
+            <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Wilayah</th>
+                <th>Status</th>
+            </tr>";
+
+    foreach ($agents as $agent) {
+        echo "<tr>
+                <td>".htmlspecialchars($agent['nama'])."</td>
+                <td>".htmlspecialchars($agent['email'])."</td>
+                <td>".htmlspecialchars($agent['wilayah'])."</td>
+                <td>".htmlspecialchars(ucfirst($agent['status']))."</td>
+             </tr>";
+    }
+
+    echo "</table>";
+}
+
+
 
     public function logout()
     {

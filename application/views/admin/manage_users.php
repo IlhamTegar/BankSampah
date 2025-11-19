@@ -1,4 +1,11 @@
 <div class="bg-white shadow-md rounded-lg overflow-hidden">
+	<div class="mb-3">
+    <a href="<?= base_url('admin/export_users'); ?>" 
+       class="btn btn-success">
+        <i class="bi bi-file-earmark-excel-fill"></i> Download Excel
+    </a>
+</div>
+
     <table class="min-w-full leading-normal">
         <thead>
             <tr>
