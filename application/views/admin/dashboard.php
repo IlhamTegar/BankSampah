@@ -11,11 +11,11 @@
         </div>
     </div>
     <div class="col-lg-6 col-md-12 mb-4">
-        <div class="card shadow-sm border-0 text-white bg-warning h-100">
+        <div class="card shadow-sm border-0 text-white bg-primary h-100">
             <div class="card-body text-center">
-                <i class="bi bi-person-fill-exclamation fs-1"></i>
-                <h1 class="display-4 fw-bold my-2"><?= $unpaid_customers; ?></h1>
-                <p class="lead">Nasabah Belum Membayar Iuran</p>
+                <i class="bi bi-person-lines-fill fs-1"></i>
+                <h1 class="display-4 fw-bold my-2"><?= $total_customers ?? 0; ?></h1>
+                <p class="lead">Total Nasabah Terdaftar</p>
             </div>
         </div>
     </div>
