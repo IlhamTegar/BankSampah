@@ -80,6 +80,11 @@
         </li>
 		<li class="nav-item">
         <a class="nav-link <?= uri_string() == 'admin/manage_iuran' ? 'active' : '' ?>" href="<?= base_url('admin/manage_iuran') ?>">
+            <i class="bi bi-cash-stack"></i>Master Manajemen Iuran
+        </a>
+        </li>
+		<li class="nav-item">
+        <a class="nav-link <?= uri_string() == 'admin/iuran_view' ? 'active' : '' ?>" href="<?= base_url('admin/view_iuran') ?>">
             <i class="bi bi-cash-stack"></i> Manajemen Iuran
         </a>
         </li>

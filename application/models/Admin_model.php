@@ -63,10 +63,35 @@ class Admin_model extends CI_Model {
 
     public function get_all_nasabah_with_iuran()
     {
-        $this->db->select('n.id_nasabah, n.tipe_nasabah, n.jumlah_nasabah, i.biaya, i.deadline, i.status_iuran');
-        $this->db->from('nasabah n');
-        $this->db->join('iuran i', 'i.id_nasabah = n.id_nasabah', 'left');
-        return $this->db->get()->result_array();
+        
+	// 	    $this->db->select('
+    //     iuran.id_nasabah,
+    //     iuran.biaya,
+    //     iuran.deadline,
+    //     iuran.status_iuran,
+    //     nasabah.tipe_nasabah,
+    //     nasabah.jumlah_nasabah,
+    //     users.nama AS nama_user
+    // ');
+    // $this->db->from('iuran');
+    // $this->db->join('nasabah', 'nasabah.id_nasabah = iuran.id_nasabah', 'left');
+    // $this->db->join('users', 'users.id_user = nasabah.id_users', 'left');
+
+    // return $this->db->get()->result_array();
+	    $this->db->select('
+        iuran.*,
+        nasabah.tipe_nasabah,
+        nasabah.jumlah_nasabah,
+        users.nama AS nama_user,
+        agent_users.nama AS nama_agent
+    ');
+    $this->db->from('iuran');
+    $this->db->join('nasabah', 'nasabah.id_nasabah = iuran.id_nasabah', 'left');
+    $this->db->join('users', 'users.id_user = nasabah.id_users', 'left'); // pemilik akun
+    $this->db->join('agent', 'agent.id_agent = users.id_agent_pilihan', 'left'); // agent terpilih
+    $this->db->join('users AS agent_users', 'agent_users.id_user = agent.id_user', 'left'); // nama bank sampah
+
+    return $this->db->get()->result_array();
     }
 
     public function add_or_update_iuran($data)
@@ -434,5 +459,56 @@ class Admin_model extends CI_Model {
         $query = $this->db->get();
         return $query->result_array();
     }
+	public function get_nasabah_detail($id_nasabah)
+{
+    $this->db->select('n.*, u.nama, u.email, u.phone');
+    $this->db->from('nasabah n');
+    $this->db->join('users u', 'u.id_user = n.id_users', 'left');
+    $this->db->where('n.id_nasabah', $id_nasabah);
+    return $this->db->get()->row_array();
+}
+// Ambil semua master iuran
+public function get_all_iuran_master()
+{
+    return $this->db->get('iuran_master')->result_array();
+}
+
+// Update biaya iuran_master
+public function update_iuran_master($id_master, $biaya)
+{
+    return $this->db->update('iuran_master', 
+        ['biaya' => $biaya],
+        ['id_master' => $id_master]
+    );
+}
+
+// Tambah row baru
+public function add_iuran_master($data)
+{
+    return $this->db->insert('iuran_master', $data);
+}
+public function update_iuran_belum_bayar_by_master($tipe, $jumlah, $biaya_baru)
+{
+    // Cari semua nasabah dengan matching tipe & jumlah
+    $this->db->select('id_nasabah');
+    $this->db->from('nasabah');
+    $this->db->where('tipe_nasabah', $tipe);
+    $this->db->where('jumlah_nasabah', $jumlah);
+    $nasabah_list = $this->db->get()->result_array();
+
+    if (!empty($nasabah_list)) {
+        $ids = array_column($nasabah_list, 'id_nasabah');
+
+        // Update hanya iuran dengan status belum bayar
+        $this->db->where_in('id_nasabah', $ids);
+        $this->db->where('status_iuran', 'belum bayar');
+        return $this->db->update('iuran', [
+            'biaya' => $biaya_baru
+        ]);
+    }
+
+    return true;
+}
+
     
 }

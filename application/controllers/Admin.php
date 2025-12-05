@@ -243,6 +243,11 @@ class Admin extends CI_Controller {
 
     public function manage_iuran()
     {
+		  $data['iuran_master'] = $this->Admin_model->get_all_iuran_master();
+
+    
+   
+    
         if ($this->input->post('update_iuran')) {
             $id_nasabah = $this->input->post('id_nasabah');
             $biaya = $this->input->post('biaya');
@@ -250,7 +255,7 @@ class Admin extends CI_Controller {
             $data = [
                 'id_nasabah' => $id_nasabah,
                 'biaya' => $biaya,
-                'deadline' => date('Y-m-d', strtotime('+30 days')),
+                'deadline' => date('Y-m-d', strtotime('+10 days')),
                 'status_iuran' => 'belum bayar'
             ];
 
@@ -261,7 +266,9 @@ class Admin extends CI_Controller {
 
         $data['nasabah_list'] = $this->Admin_model->get_all_nasabah_with_iuran();
         $data['view_name'] = 'admin/manage_iuran'; // Menggunakan view_name
+		$data['iuran_master'] = $this->Admin_model->get_all_iuran_master();
         $this->load->view('admin/layout', $data);
+		
     }
 
 	public function laporan_transaksi()
@@ -512,6 +519,66 @@ public function export_agents()
 
     echo "</table>";
 }
+public function view_iuran()
+{
+    $data['nasabah_list'] = $this->Admin_model->get_all_nasabah_with_iuran();
+    $data['view_name'] = 'admin/iuran_view';
+    $this->load->view('admin/layout', $data);
+}
+public function detail_nasabah($id_nasabah)
+{
+    $this->load->model('Admin_model');
+
+    $data['nasabah'] = $this->Admin_model->get_nasabah_detail($id_nasabah);
+
+    if (!$data['nasabah']) {
+        $this->session->set_flashdata('error', 'Nasabah tidak ditemukan.');
+        redirect('admin/manage_iuran');
+    }
+
+    $data['view_name'] = 'admin/detail_nasabah';
+    $this->load->view('admin/layout', $data);
+}
+public function update_iuran_master()
+{
+    $id = $this->input->post('id_master');
+    $biaya = $this->input->post('biaya');
+
+    // Ambil data lama dari master
+    $master = $this->Admin_model->get_all_iuran_master();
+    foreach ($master as $m) {
+        if ($m['id_master'] == $id) {
+            $tipe = $m['tipe_nasabah'];
+            $jumlah = $m['jumlah_nasabah'];
+            break;
+        }
+    }
+
+    // Update tabel master
+    $this->Admin_model->update_iuran_master($id, $biaya);
+
+    // 🚀 Update iuran nasabah yang belum bayar
+    $this->Admin_model->update_iuran_belum_bayar_by_master($tipe, $jumlah, $biaya);
+
+    $this->session->set_flashdata('success', 'Biaya berhasil diperbarui & iuran belum bayar di-update!');
+    redirect('admin/manage_iuran');
+}
+
+public function add_iuran_master()
+{
+    $data = [
+        'tipe_nasabah'   => $this->input->post('tipe_nasabah'),
+        'jumlah_nasabah' => $this->input->post('jumlah_nasabah'),
+        'biaya'          => $this->input->post('biaya')
+    ];
+
+    $this->Admin_model->add_iuran_master($data);
+
+    $this->session->set_flashdata('success', 'Data berhasil ditambahkan!');
+    redirect('admin/manage_iuran');
+}
+
+
 
 
 
